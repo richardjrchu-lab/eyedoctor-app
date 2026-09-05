@@ -24,7 +24,7 @@
         4 => 'border-red-600 text-red-300',
     ];
     $probs = $prediction->probabilities ?? [];
-    $referralProb = $prediction->confidence_score;
+$referralProb = $prediction->referable_probability;
 @endphp
 
 <header class="bg-slate-900 border-b border-slate-700 p-5 text-center">
@@ -89,12 +89,12 @@
             <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Referral probability</p>
             <div class="relative h-2 bg-slate-700 rounded">
                 <div class="absolute inset-y-0 left-0 rounded {{ $prediction->referral_flag ? 'bg-red-600' : 'bg-emerald-600' }}"
-                     style="width: {{ min(100, max(0, $referralProb * 100)) }}%"></div>
-                <div class="absolute inset-y-0 w-px bg-slate-100" style="left: 48%"></div>
+ style="width: {{ min(100, max(0, ($referralProb ?? 0) * 100)) }}%"></div>
+                 <div class="absolute inset-y-0 w-px bg-slate-100" style="left: 48%"></div>
             </div>
             <div class="flex justify-between text-[10px] text-slate-400 mt-1">
-                <span>P = {{ number_format($referralProb, 3) }}</span>
-                <span>Threshold = 0.48</span>
+  <span>{{ $referralProb === null ? 'P = not recorded' : 'P = ' . number_format($referralProb, 3) }}</span>
+                  <span>Threshold = 0.48</span>
             </div>
         </div>
 

@@ -183,5 +183,50 @@ class PredictionController extends Controller
             ->paginate(20);
 
         return view('history', ['images' => $images]);
+        }
+       
+        
+
+     public function show(Request $request, Prediction $prediction)
+    {
+        $user = $request->user();
+
+        $image = Image::whereKey($prediction->image_id)
+            ->visibleTo($user)
+            ->with('user')
+            ->first();
+
+        if (! $image) {
+            AuditLog::record('denied_view', $prediction->id, 'prediction');
+            abort(403);
+        }
+
+        $prediction->load('correction.correctedBy');
+
+        AuditLog::record('viewed_prediction', $prediction->id, 'prediction');
+
+        return view('prediction-detail', [
+            'prediction' => $prediction,
+            'image' => $image,
+            'isAdmin' => $user->hasRole('admin'),
+        ]);
     }
+
+    public function imageFile(Request $request, Image $image)
+    {
+        abort_unless(
+            Image::whereKey($image->id)->visibleTo($request->user())->exists(),
+            403
+        );
+
+        $disk = Storage::disk('s3');
+
+        abort_unless($disk->exists($image->storage_path), 404);
+
+        return response($disk->get($image->storage_path), 200, [
+            'Content-Type' => $disk->mimeType($image->storage_path) ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=300',
+        ]);     
+
+ }
 }
