@@ -43,7 +43,7 @@ class PredictionController extends Controller
         // 5. Call FastAPI internally -- not exposed to the browser
         $response = Http::attach(
             'file', file_get_contents($file), $anonymizedFilename
-        )->post('http://localhost:8080/predict');
+        )->post(config('services.fastapi.url') . '/predict');
 
         if (! $response->successful()) {
             $image->update(['validation_status' => 'rejected_not_fundus']);
