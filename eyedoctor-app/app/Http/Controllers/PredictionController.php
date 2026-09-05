@@ -3,15 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Correction;
 use App\Models\Image;
 use App\Models\Prediction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PredictionController extends Controller
 {
+    /**
+     * ICDR stage index for each label the model can return.
+     */
+    private const STAGE_INDEX = [
+        'No DR' => 0,
+        'Mild NPDR' => 1,
+        'Moderate NPDR' => 2,
+        'Severe NPDR' => 3,
+        'PDR' => 4,
+    ];
+
     public function predict(Request $request)
     {
         // 1. Validate the upload before anything else touches it
@@ -21,16 +34,17 @@ class PredictionController extends Controller
 
         $file = $request->file('file');
         $user = $request->user();
+        $fileContents = file_get_contents($file);
 
-        // 2. Build an anonymized filename -- no original filename, no patient identifiers
+        // 2. Anonymized filename -- no original filename, no patient identifiers
         $extension = $file->getClientOriginalExtension();
         $anonymizedFilename = 'anonymousimage_' . Str::random(12) . '.' . $extension;
         $storagePath = 'uploads/' . $user->id . '/' . $anonymizedFilename;
 
         // 3. Upload to Supabase Storage
-        Storage::disk('s3')->put($storagePath, file_get_contents($file));
+        Storage::disk('s3')->put($storagePath, $fileContents);
 
-        // 4. Record the image in the database
+        // 4. Record the image
         $image = Image::create([
             'user_id' => $user->id,
             'storage_path' => $storagePath,
@@ -40,13 +54,40 @@ class PredictionController extends Controller
 
         AuditLog::record('uploaded_image', $image->id, 'image');
 
-        // 5. Call FastAPI internally -- not exposed to the browser
-        $response = Http::attach(
-            'file', file_get_contents($file), $anonymizedFilename
-        )->post(config('services.fastapi.url') . '/predict');
+        // 5. Call the model service. Never reached by the browser directly.
+        //    45s leaves room for Guzzle to time out cleanly before PHP's own
+        //    max_execution_time turns it into an unhandled fatal.
+        try {
+            $response = Http::timeout(45)->attach(
+                'file', $fileContents, $anonymizedFilename
+            )->post(config('services.fastapi.url') . '/predict');
+        } catch (\Throwable $e) {
+            Log::error('Model service unreachable', [
+                'image_id' => $image->id,
+                'error' => $e->getMessage(),
+            ]);
+            $image->update(['validation_status' => 'error']);
+
+            return response()->json([
+                'detail' => 'Model server unreachable. Please try again.',
+            ], 503);
+        }
 
         if (! $response->successful()) {
-            $image->update(['validation_status' => 'rejected_not_fundus']);
+            // Only a deliberate rejection means "not a fundus image".
+            // Any other status is a server fault and must NOT be recorded as
+            // an image rejection -- that would corrupt the research dataset.
+            $isRejection = $response->status() === 422;
+
+            Log::warning('Model service returned an error', [
+                'image_id' => $image->id,
+                'status' => $response->status(),
+            ]);
+
+            $image->update([
+                'validation_status' => $isRejection ? 'rejected_not_fundus' : 'error',
+            ]);
+
             return response()->json([
                 'detail' => $response->json('detail') ?? 'Model server error.',
             ], $response->status());
@@ -54,41 +95,69 @@ class PredictionController extends Controller
 
         $data = $response->json();
 
-        // 6. Save the prediction result
-        $labelToStageIndex = [
-            'No DR' => 0,
-            'Mild NPDR' => 1,
-            'Moderate NPDR' => 2,
-            'Severe NPDR' => 3,
-            'PDR' => 4,
-        ];
+        // 6. Refuse to store an incomplete result.
+        //    Defaulting a missing grade to "No DR" or a missing flag to
+        //    "no referral" would fail toward the most reassuring answer,
+        //    which is the wrong direction for a screening tool.
+        $label = $data['predicted_label'] ?? null;
+
+        $isComplete = isset(self::STAGE_INDEX[$label])
+            && isset($data['confidence'])
+            && isset($data['flagged_for_review'])
+            && ! empty($data['class_probabilities']);
+
+        if (! $isComplete) {
+            Log::error('Model returned an incomplete result', [
+                'image_id' => $image->id,
+                'keys' => array_keys($data ?? []),
+            ]);
+            $image->update(['validation_status' => 'error']);
+
+            return response()->json([
+                'detail' => 'Model returned an incomplete result. No prediction was saved.',
+            ], 502);
+        }
 
         $prediction = Prediction::create([
             'image_id' => $image->id,
-            'predicted_class' => $labelToStageIndex[$data['predicted_label']] ?? 0,
-            'confidence_score' => $data['confidence'] ?? 0,
-            'probabilities' => $data['class_probabilities'] ?? [],
-            'referral_flag' => $data['flagged_for_review'] ?? false,
+            'predicted_class' => self::STAGE_INDEX[$label],
+            'confidence_score' => $data['confidence'],
+            'probabilities' => $data['class_probabilities'],
+            'referral_flag' => $data['flagged_for_review'],
             'gradcam_path' => null,
             'model_version' => 'efficientnet-b4-512-coral',
         ]);
 
-      AuditLog::record('viewed_result', $prediction->id, 'prediction');
+        AuditLog::record('prediction_created', $prediction->id, 'prediction');
 
-// 7. Return the same shape the frontend already expects, plus our DB prediction ID
-$data['prediction_id'] = $prediction->id;
+        // 7. Same shape the frontend already expects, plus our DB prediction ID
+        $data['prediction_id'] = $prediction->id;
 
-return response()->json($data);
+        return response()->json($data);
     }
 
     public function correct(Request $request, Prediction $prediction)
     {
+        // A doctor may only correct a prediction on an image they can see.
+        // Reuses scopeVisibleTo so this stays the single access-control layer.
+        $canAccess = Image::whereKey($prediction->image_id)
+            ->visibleTo($request->user())
+            ->exists();
+
+        if (! $canAccess) {
+            AuditLog::record('denied_correction', $prediction->id, 'prediction');
+
+            return response()->json([
+                'detail' => 'You do not have access to this prediction.',
+            ], 403);
+        }
+
         $request->validate([
             'corrected_class' => 'required|integer|min:0|max:4',
             'note' => 'nullable|string|max:2000',
         ]);
 
-        $correction = \App\Models\Correction::updateOrCreate(
+        $correction = Correction::updateOrCreate(
             ['prediction_id' => $prediction->id],
             [
                 'corrected_by' => $request->user()->id,
