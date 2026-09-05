@@ -103,8 +103,9 @@ class PredictionController extends Controller
 
         $isComplete = isset(self::STAGE_INDEX[$label])
             && isset($data['confidence'])
-            && isset($data['flagged_for_review'])
-            && ! empty($data['class_probabilities']);
+ && isset($data['referable'])
+            && isset($data['referable_probability'])
+                        && ! empty($data['class_probabilities']);
 
         if (! $isComplete) {
             Log::error('Model returned an incomplete result', [
@@ -123,7 +124,10 @@ class PredictionController extends Controller
             'predicted_class' => self::STAGE_INDEX[$label],
             'confidence_score' => $data['confidence'],
             'probabilities' => $data['class_probabilities'],
-            'referral_flag' => $data['flagged_for_review'],
+             'referral_flag' => $data['referable'],
+            'referable_probability' => $data['referable_probability'],
+            'flagged_for_review' => $data['flagged_for_review'] ?? false,
+                      
             'gradcam_path' => null,
             'model_version' => 'efficientnet-b4-512-coral',
         ]);

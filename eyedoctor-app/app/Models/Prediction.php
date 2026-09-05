@@ -15,6 +15,8 @@ class Prediction extends Model
         'confidence_score',
         'probabilities',
         'referral_flag',
+        'referable_probability',
+        'flagged_for_review',
         'gradcam_path',
         'model_version',
     ];
@@ -22,6 +24,9 @@ class Prediction extends Model
     protected $casts = [
         'probabilities' => 'array',
         'referral_flag' => 'boolean',
+        'flagged_for_review' => 'boolean',
+        'confidence_score' => 'float',
+        'referable_probability' => 'float',
     ];
 
     public function image()

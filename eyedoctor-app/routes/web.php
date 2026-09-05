@@ -4,18 +4,26 @@ use App\Http\Controllers\PredictionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'role:doctor'])->get('/', function () {
-    return view('welcome');
-})->name('welcome');
+// Upload and prediction -- doctors only. Admins review, they don't diagnose.
+Route::middleware(['auth', 'role:doctor'])->group(function () {
+    Route::get('/', function () {
+        return view('welcome');
+    })->name('welcome');
 
-Route::middleware(['auth', 'role:doctor'])->post('/predict', [PredictionController::class, 'predict'])->name('predict');
-Route::middleware(['auth', 'role:doctor'])->post('/predictions/{prediction}/correct', [PredictionController::class, 'correct'])->name('predictions.correct');
-Route::middleware(['auth', 'role:doctor'])->get('/history', [PredictionController::class, 'history'])->name('history');
+    Route::post('/predict', [PredictionController::class, 'predict'])
+        ->middleware('throttle:20,1')
+        ->name('predict');
 
+    Route::post('/predictions/{prediction}/correct', [PredictionController::class, 'correct'])
+        ->name('predictions.correct');
+});
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Review -- doctors see their own records, admins see all.
+Route::middleware(['auth', 'role:doctor|admin'])->group(function () {
+    Route::get('/history', [PredictionController::class, 'history'])->name('history');
+    Route::get('/predictions/{prediction}', [PredictionController::class, 'show'])->name('predictions.show');
+    Route::get('/images/{image}/file', [PredictionController::class, 'imageFile'])->name('images.file');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
