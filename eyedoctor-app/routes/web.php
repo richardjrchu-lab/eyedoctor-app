@@ -1,36 +1,26 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\PredictionController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::middleware(['auth', 'role:doctor'])->get('/', function () {
     return view('welcome');
+})->name('welcome');
+
+Route::middleware(['auth', 'role:doctor'])->post('/predict', [PredictionController::class, 'predict'])->name('predict');
+Route::middleware(['auth', 'role:doctor'])->post('/predictions/{prediction}/correct', [PredictionController::class, 'correct'])->name('predictions.correct');
+Route::middleware(['auth', 'role:doctor'])->get('/history', [PredictionController::class, 'history'])->name('history');
+
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::post('/analyze-retina', function (Request $request) {
-    if (!$request->hasFile('eye_photo')) {
-        return response()->json(['error' => 'No image uploaded'], 400);
-    }
-
-    $image = $request->file('eye_photo');
-    $tempPath = $image->getRealPath();
-    
-    // Grab the API key from your .env
-    $apiKey = env('GEMINI_API_KEY', '');
-
-    // Windows syntax: Set environment variable and run python3 script
-    $command = 'set GEMINI_API_KEY=' . escapeshellarg($apiKey) . ' && python3 ' . escapeshellarg(base_path('predict.py')) . ' ' . escapeshellarg($tempPath) . ' 2>&1';
-    
-    $output = shell_exec($command);
-    
-    $decoded = json_decode(trim($output), true);
-
-    if (!$decoded) {
-        return response()->json([
-            'stage' => 'invalid',
-            'description' => 'Execution Error Output: ' . $output
-        ]);
-    }
-
-    return response()->json($decoded);
-});
+require __DIR__.'/auth.php';
