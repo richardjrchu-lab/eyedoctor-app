@@ -16,7 +16,9 @@ class Prediction extends Model
         'probabilities',
         'referral_flag',
         'referable_probability',
-        'flagged_for_review',
+'flagged_for_review',
+        'atypical_fundus_image',
+        'fundus_signature_score',
         'gradcam_path',
         'model_version',
     ];
@@ -24,7 +26,9 @@ class Prediction extends Model
     protected $casts = [
         'probabilities' => 'array',
         'referral_flag' => 'boolean',
-        'flagged_for_review' => 'boolean',
+ 'flagged_for_review' => 'boolean',
+        'atypical_fundus_image' => 'boolean',
+        'fundus_signature_score' => 'float',
         'confidence_score' => 'float',
         'referable_probability' => 'float',
     ];

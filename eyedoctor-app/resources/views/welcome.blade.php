@@ -123,6 +123,20 @@
                     </div>
                 </div>
 
+ <!-- Atypical image notice: the gate accepted this image but it
+                     scored in the warn band. 1.1% of real dataset images land
+                     here, skewed toward severe and proliferative cases -- the
+                     grades where a missed referral costs most. -->
+                <div id="atypical-flag" class="hidden mb-4 p-3 bg-amber-950/30 rounded-lg border border-amber-800/50">
+                    <div class="flex items-start gap-2">
+                        <span class="text-amber-500 text-sm leading-none mt-0.5">&#9888;</span>
+                        <div>
+                            <span class="text-[10px] font-mono text-amber-400 uppercase font-bold block mb-1">Atypical Image</span>
+                            <p id="atypical-flag-text" class="text-[11px] text-amber-200/80 font-mono leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Per-class probability breakdown (real model output) -->
                 <div id="probability-panel" class="hidden mb-4">
                     <span class="text-[10px] font-mono text-slate-500 uppercase font-bold block mb-2">Class Probability Distribution:</span>
@@ -393,6 +407,19 @@
                     reviewFlag.classList.remove('hidden');
                 } else {
                     reviewFlag.classList.add('hidden');
+                }
+
+                const atypicalFlag = document.getElementById('atypical-flag');
+                if (data.atypical_fundus_image) {
+                    const score = (data.fundus_signature_score ?? 0).toFixed(2);
+                    document.getElementById('atypical-flag-text').innerText =
+                        `This image is unusual for a fundus photograph (signature score ${score}). `
+                        + `It was graded normally, but atypical images are more often severe or `
+                        + `proliferative cases where haemorrhage alters the colour profile. `
+                        + `Weigh the grade accordingly.`;
+                    atypicalFlag.classList.remove('hidden');
+                } else {
+                    atypicalFlag.classList.add('hidden');
                 }
 
                 renderProbabilityBars(data.class_probabilities || []);

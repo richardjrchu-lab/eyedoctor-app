@@ -95,6 +95,24 @@ class PredictionController extends Controller
 
         $data = $response->json();
 
+        // Honour the model's own fundus check. FastAPI returns this flag on a
+        // 200 response, so without this the app would grade a non-fundus image
+        // and store it as a real clinical prediction.
+        //
+        // Deliberately fails closed: a missing or null flag is treated as a
+        // rejection, not an approval. If the model service ever stops sending
+        // it, uploads break loudly rather than silently grading junk.
+        if (($data['is_valid_fundus_image'] ?? null) !== true) {
+            $image->update(['validation_status' => 'rejected_not_fundus']);
+            AuditLog::record('rejected_not_fundus', $image->id, 'image');
+
+              return response()->json([
+                'detail' => 'This does not appear to be a color fundus photograph. '
+                    . 'No prediction was recorded.',
+                'signature_score' => $data['fundus_signature_score'] ?? null,
+            ], 422);
+  }
+
         // 6. Refuse to store an incomplete result.
         //    Defaulting a missing grade to "No DR" or a missing flag to
         //    "no referral" would fail toward the most reassuring answer,
@@ -117,7 +135,7 @@ class PredictionController extends Controller
             return response()->json([
                 'detail' => 'Model returned an incomplete result. No prediction was saved.',
             ], 502);
-        }
+    }
 
         $prediction = Prediction::create([
             'image_id' => $image->id,
@@ -126,7 +144,9 @@ class PredictionController extends Controller
             'probabilities' => $data['class_probabilities'],
              'referral_flag' => $data['referable'],
             'referable_probability' => $data['referable_probability'],
-            'flagged_for_review' => $data['flagged_for_review'] ?? false,
+  'flagged_for_review' => $data['flagged_for_review'] ?? false,
+            'atypical_fundus_image' => $data['atypical_fundus_image'] ?? false,
+            'fundus_signature_score' => $data['fundus_signature_score'] ?? null,
                       
             'gradcam_path' => null,
             'model_version' => 'efficientnet-b4-512-coral',
