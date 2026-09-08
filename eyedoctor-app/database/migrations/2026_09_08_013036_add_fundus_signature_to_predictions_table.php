@@ -20,4 +20,4 @@ return new class extends Migration
             $table->dropColumn(['atypical_fundus_image', 'fundus_signature_score']);
         });
     }
-};
+};      

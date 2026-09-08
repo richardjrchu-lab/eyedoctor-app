@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 // Upload and prediction -- doctors only. Admins review, they don't diagnose.
 Route::middleware(['auth', 'role:doctor'])->group(function () {
-    Route::get('/', function () {
-        return view('welcome');
-    })->name('welcome');
+    Route::get('/', [PredictionController::class, 'welcome'])->name('welcome');
 
     Route::post('/predict', [PredictionController::class, 'predict'])
         ->middleware('throttle:20,1')

@@ -249,4 +249,8 @@ class PredictionController extends Controller
         ]);     
 
  }
+public function welcome()
+    {
+        return view('welcome');
+    }
 }

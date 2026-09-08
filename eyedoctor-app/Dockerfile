@@ -11,6 +11,8 @@ RUN npm run build
 # ---- Stage 2: PHP + nginx runtime ----
 FROM richarvey/nginx-php-fpm:3.1.6
 
+WORKDIR /var/www/html
+
 COPY . .
 
 # Bring in the compiled assets from stage 1
