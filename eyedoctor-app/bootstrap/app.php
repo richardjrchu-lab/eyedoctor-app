@@ -19,6 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        /*
+         * Never flash professional registration numbers back into the
+         * session after validation failures.
+         */
+        $exceptions->dontFlash([
+            'license_registration_number',
+        ]);
+
         // An expired CSRF token otherwise renders a blank "419 PAGE EXPIRED"
         // with no explanation and no way forward. A clinician who leaves a tab
         // open on a shared terminal has no reason to know that reloading fixes
