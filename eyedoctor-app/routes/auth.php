@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccessRequestController;
+use App\Http\Controllers\VerifyAccessRequestEmailController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -78,6 +79,37 @@ Route::middleware('guest')->group(function () {
         [NewPasswordController::class, 'store']
     )->name('password.store');
 });
+
+
+
+/*
+ * Professional-access email verification.
+ *
+ * These routes are intentionally outside the normal User email-verification
+ * flow because an applicant is not a User until an administrator approves
+ * the request.
+ *
+ * Possession of a valid, unexpired Laravel-signed URL is required before
+ * the request can move from email_pending to pending_review.
+ */
+
+Route::get(
+    'request-access/verify/{publicId}/{emailHash}',
+    VerifyAccessRequestEmailController::class
+)
+    ->middleware([
+        'signed',
+        'throttle:6,1',
+    ])
+    ->name('access-request.verify');
+
+
+Route::view(
+    'request-access/email-verified',
+    'auth.access-request-email-verified'
+)
+    ->middleware('throttle:30,1')
+    ->name('access-request.email-verified');
 
 
 Route::middleware('auth')->group(function () {
