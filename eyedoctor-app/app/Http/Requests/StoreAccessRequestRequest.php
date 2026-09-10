@@ -170,6 +170,13 @@ class StoreAccessRequestRequest extends FormRequest
                 ])->max(self::MAX_PROOF_SIZE),
             ],
 
+            'cf-turnstile-response' => [
+                'bail',
+                'required',
+                'string',
+                'max:2048',
+            ],
+
             'privacy_consent' => [
                 'required',
                 'accepted',
@@ -267,6 +274,9 @@ class StoreAccessRequestRequest extends FormRequest
 
             'proof_document.max' =>
                 'The verification document must not exceed 8 MB.',
+
+            'cf-turnstile-response.required' =>
+                'Please complete the security verification before submitting your request.',
 
             'privacy_consent.accepted' =>
                 'You must acknowledge the privacy notice before submitting your request.',

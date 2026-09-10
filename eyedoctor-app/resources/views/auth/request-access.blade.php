@@ -2,6 +2,12 @@
     title="Request Professional Access"
 >
 
+    <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        async
+        defer
+    ></script>
+
     <div
         x-data="{
             proofType: @js(old('proof_type', ''))
@@ -1035,6 +1041,51 @@
                 </div>
 
             </section>
+
+
+            {{-- ===================================================== --}}
+            {{-- SECURITY VERIFICATION                                 --}}
+            {{-- ===================================================== --}}
+
+            <div
+                class="mt-8
+                       rounded-xl
+                       border
+                       border-[#334155]
+                       bg-[#0f172a]
+                       p-4"
+            >
+
+                <p
+                    class="mb-3
+                           text-xs
+                           font-semibold
+                           uppercase
+                           tracking-[0.12em]
+                           text-[#cbd5e1]"
+                >
+                    Security verification
+                    <span class="text-[#2dd4bf]">*</span>
+                </p>
+
+                <div
+                    class="cf-turnstile"
+                    data-sitekey="{{ config('turnstile.site_key') }}"
+                    data-action="{{ config('turnstile.expected_action') }}"
+                    data-theme="dark"
+                ></div>
+
+                @error('cf-turnstile-response')
+                    <p
+                        class="mt-2
+                               text-xs
+                               text-red-300"
+                    >
+                        {{ $message }}
+                    </p>
+                @enderror
+
+            </div>
 
 
             {{-- ===================================================== --}}

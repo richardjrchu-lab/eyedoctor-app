@@ -7,6 +7,7 @@ use App\Models\AccessRequest;
 use App\Models\AccessRequestEvent;
 use App\Models\User;
 use App\Services\AccessRequestVerificationService;
+use App\Services\TurnstileVerifier;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
@@ -20,7 +21,8 @@ use Throwable;
 class AccessRequestController extends Controller
 {
     public function __construct(
-        private readonly AccessRequestVerificationService $verificationService
+        private readonly AccessRequestVerificationService $verificationService,
+        private readonly TurnstileVerifier $turnstileVerifier
     ) {
     }
 
@@ -86,6 +88,25 @@ class AccessRequestController extends Controller
         StoreAccessRequestRequest $request
     ): RedirectResponse {
         $validated = $request->validated();
+
+        /*
+         * Turnstile is validated on the server before database queries,
+         * verification-document processing, or object-storage uploads.
+         *
+         * Browser-side completion alone is never trusted.
+         */
+        if (
+            ! $this->turnstileVerifier->verify(
+                $validated['cf-turnstile-response']
+                    ?? null,
+                $request->ip()
+            )
+        ) {
+            return back()->withErrors([
+                'cf-turnstile-response' =>
+                    'Security verification failed. Please try again.',
+            ]);
+        }
 
         $email = (string) $validated['email'];
 

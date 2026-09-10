@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
          */
         $exceptions->dontFlash([
             'license_registration_number',
+            'cf-turnstile-response',
         ]);
 
         // An expired CSRF token otherwise renders a blank "419 PAGE EXPIRED"
