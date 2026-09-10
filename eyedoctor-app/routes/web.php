@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminAccessRequestController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MobileAppController;
 use App\Http\Controllers\PredictionController;
@@ -60,6 +61,46 @@ Route::middleware([
     )->name('predictions.correct');
 
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| Administrator Access Review
+|--------------------------------------------------------------------------
+|
+| Read-only professional-access review.
+| Decision actions are intentionally added in a later checkpoint.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'role:admin',
+])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        Route::get(
+            '/access-requests',
+            [AdminAccessRequestController::class, 'index']
+        )->name('access-requests.index');
+
+
+        Route::get(
+            '/access-requests/{accessRequest:public_id}',
+            [AdminAccessRequestController::class, 'show']
+        )->name('access-requests.show');
+
+
+        Route::get(
+            '/access-requests/{accessRequest:public_id}/proof',
+            [AdminAccessRequestController::class, 'proof']
+        )
+            ->middleware('throttle:30,1')
+            ->name('access-requests.proof');
+
+    });
 
 
 /*
