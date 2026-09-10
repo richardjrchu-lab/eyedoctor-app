@@ -125,7 +125,7 @@
                 "
             >
                 This signed verification link expires in
-                {{ $expiresMinutes }} minutes.
+                {{ $expiresMinutes === 1440 ? '24 hours' : $expiresMinutes . ' minutes' }}.
             </p>
 
 
@@ -152,7 +152,7 @@
                     color: #94a3b8;
                 "
             >
-                RETINA ? AI-Assisted Diabetic Retinopathy Screening Platform
+                RETINA | AI-Assisted Diabetic Retinopathy Screening Platform
             </div>
 
         </div>
