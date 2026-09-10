@@ -6,6 +6,7 @@ use App\Http\Requests\StoreAccessRequestRequest;
 use App\Models\AccessRequest;
 use App\Models\AccessRequestEvent;
 use App\Models\User;
+use App\Services\AccessRequestVerificationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
@@ -18,6 +19,11 @@ use Throwable;
 
 class AccessRequestController extends Controller
 {
+    public function __construct(
+        private readonly AccessRequestVerificationService $verificationService
+    ) {
+    }
+
     /**
      * Verification files are isolated from retinal images and APK releases.
      */
@@ -172,12 +178,12 @@ class AccessRequestController extends Controller
          * behind.
          */
         try {
-            $created = DB::transaction(
+            $accessRequest = DB::transaction(
                 function () use (
                     $validated,
                     $email,
                     $proof
-                ): bool {
+                ): ?AccessRequest {
                     /*
                      * Repeat the duplicate check inside the transaction.
                      *
@@ -186,7 +192,7 @@ class AccessRequestController extends Controller
                      * normalized-email constraint remains the final authority.
                      */
                     if ($this->emailIsAlreadyKnown($email)) {
-                        return false;
+                        return null;
                     }
 
                     $now = now();
@@ -293,7 +299,7 @@ class AccessRequestController extends Controller
                             AccessRequest::STATUS_EMAIL_PENDING,
                     ]);
 
-                    return true;
+                    return $accessRequest;
                 },
                 3
             );
@@ -306,7 +312,7 @@ class AccessRequestController extends Controller
              * so remove its newly uploaded object and return the same generic
              * response used for successful submissions.
              */
-            if (! $created) {
+            if ($accessRequest === null) {
                 $this->deleteUploadedProof(
                     $disk,
                     $proof['object_key']
@@ -330,6 +336,28 @@ class AccessRequestController extends Controller
             );
 
             return $this->processingFailureResponse();
+        }
+
+        /*
+         * The application and its verification proof are now durably stored.
+         *
+         * Email delivery deliberately happens AFTER the database transaction.
+         * A slow or unavailable mail provider must never hold the transaction
+         * open or cause the applicant's already-accepted proof to be deleted.
+         *
+         * If delivery fails, the request remains email_pending. A separate
+         * controlled resend workflow will provide recovery without requiring
+         * the applicant to submit another verification document.
+         */
+        try {
+            $this->verificationService->send(
+                $accessRequest
+            );
+        } catch (Throwable $exception) {
+            $this->logFailure(
+                'Access request verification email delivery failed.',
+                $exception
+            );
         }
 
         return $this->receivedResponse();
