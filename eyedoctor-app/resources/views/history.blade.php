@@ -49,6 +49,20 @@
                                 </span>
                             @endif
                             <span class="text-[10px] font-mono text-slate-500 block mt-1">View details &rarr;</span>
+                        @elseif ($image->validation_status === 'rejected_not_fundus')
+                            <span class="text-xs font-mono text-rose-400 block">
+                                REJECTED — NOT A VALID FUNDUS IMAGE
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-500 block mt-1">
+                                No DR classification performed
+                            </span>
+                        @elseif ($image->validation_status === 'error')
+                            <span class="text-xs font-mono text-amber-400 block">
+                                Prediction unavailable
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-500 block mt-1">
+                                Model service error — no classification recorded
+                            </span>
                         @else
                             <span class="text-xs font-mono text-slate-500">No prediction recorded</span>
                         @endif
