@@ -389,16 +389,68 @@
         {{-- ========================================================= --}}
 
         <div
-            class="mt-5 border-t
+            class="mt-5
+                   border-t
                    border-[#334155]
-                   pt-4 text-center"
+                   pt-4
+                   text-center"
         >
 
             <p
-                class="text-xs leading-5
+                class="text-xs
+                       font-medium
+                       leading-5
+                       text-[#94a3b8]"
+            >
+                Need professional access to RETINA?
+            </p>
+
+
+            <a
+                href="{{ route('access-request.create') }}"
+                class="mt-2
+                       inline-flex
+                       items-center
+                       justify-center
+                       gap-1.5
+                       text-sm
+                       font-semibold
+                       text-[#2dd4bf]
+                       underline-offset-4
+                       transition
+                       hover:text-[#5eead4]
+                       hover:underline
+                       focus:outline-none
+                       focus:ring-2
+                       focus:ring-[#2dd4bf]
+                       focus:ring-offset-2
+                       focus:ring-offset-[#1e293b]"
+            >
+                Request professional access
+
+                <svg
+                    viewBox="0 0 24 24"
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M5 12h14" />
+                    <path d="m13 6 6 6-6 6" />
+                </svg>
+            </a>
+
+
+            <p
+                class="mt-2
+                       text-[11px]
+                       leading-5
                        text-[#64748b]"
             >
-                Access to this system is limited to authorized users.
+                Applications are reviewed before an account is created.
             </p>
 
         </div>

@@ -203,6 +203,17 @@ class StoreAccessRequestRequest extends FormRequest
             'proof_deleted_at' => ['prohibited'],
             'submission_count' => ['prohibited'],
             'last_submitted_at' => ['prohibited'],
+
+            /*
+             * Consent itself comes from the applicant, but the trusted
+             * timestamps and policy-version identifiers are assigned only
+             * by RETINA after validation succeeds.
+             */
+            'privacy_consent_at' => ['prohibited'],
+            'privacy_notice_version' => ['prohibited'],
+            'appropriate_use_consent_at' => ['prohibited'],
+            'appropriate_use_notice_version' => ['prohibited'],
+
             'email_verification_sent_at' => ['prohibited'],
             'email_verified_at' => ['prohibited'],
             'reviewed_by' => ['prohibited'],
