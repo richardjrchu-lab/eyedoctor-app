@@ -12,7 +12,15 @@
     <header class="bg-slate-900 border-b border-slate-700 p-5 text-center shadow-md">
         <h1 class="text-xl font-bold tracking-tight text-slate-100 font-mono">Diabetic Retinopathy Detection System</h1>
         <p class="text-slate-400 text-xs mt-1">EfficientNetB4 Deep Learning Classifier &mdash; ICDR 5-Stage Grading</p>
-        <a href="{{ route('history') }}" class="text-[10px] font-mono text-slate-500 hover:text-slate-300 uppercase block mt-2">View Prediction History &rarr;</a>
+         <div class="flex justify-center items-center gap-4 mt-2">
+            <a href="{{ route('history') }}" class="text-[10px] font-mono text-slate-500 hover:text-slate-300 uppercase">View Prediction History &rarr;</a>
+            <span class="text-slate-700 text-[10px]">|</span>
+            <span class="text-[10px] font-mono text-slate-600">{{ auth()->user()->name }}</span>
+            <form method="POST" action="{{ route('logout') }}" class="contents">
+                @csrf
+                <button type="submit" class="text-[10px] font-mono text-slate-500 hover:text-slate-300 uppercase">Log out</button>
+            </form>
+        </div>
     </header>
 
     <main class="max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 my-auto">
