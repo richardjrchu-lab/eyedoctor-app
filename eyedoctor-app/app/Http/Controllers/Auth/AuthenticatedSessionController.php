@@ -28,11 +28,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(
-            $request->user()->hasRole('admin')
-                ? route('history', absolute: false)
-                : route('welcome', absolute: false)
-        );
+        if ($request->user()->hasRole('admin')) {
+            return redirect()->route('history');
+        }
+
+        return redirect()->intended(route('welcome', absolute: false));
     }
 
     /**
