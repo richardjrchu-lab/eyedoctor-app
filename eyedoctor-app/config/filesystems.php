@@ -43,7 +43,7 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | Retinal Image Storage — Supabase
+        | Retinal Image Storage ? Supabase
         |--------------------------------------------------------------------------
         |
         | Private Supabase Storage bucket used for retinal fundus images.
@@ -70,7 +70,7 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | RETINA Android Downloads — Cloudflare R2
+        | RETINA Android Downloads ? Cloudflare R2
         |--------------------------------------------------------------------------
         |
         | Private Cloudflare R2 bucket containing approved RETINA Android
@@ -91,6 +91,36 @@ return [
                 'retina-app-downloads'
             ),
             'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Professional Verification Documents ? Cloudflare R2
+        |--------------------------------------------------------------------------
+        |
+        | Dedicated private storage for professional licenses, institution
+        | IDs, and affiliation documents submitted during access requests.
+        |
+        | These credentials are scoped only to the verification bucket and
+        | are intentionally separate from the APK and retinal-image storage.
+        |
+        */
+
+        'professional_verifications' => [
+            'driver' => 's3',
+            'key' => env('VERIFICATION_R2_ACCESS_KEY_ID'),
+            'secret' => env('VERIFICATION_R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env(
+                'VERIFICATION_R2_BUCKET',
+                'retina-professional-verifications'
+            ),
+            'endpoint' => env('VERIFICATION_R2_ENDPOINT'),
             'use_path_style_endpoint' => true,
             'visibility' => 'private',
             'throw' => true,
