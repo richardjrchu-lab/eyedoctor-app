@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RejectAccessRequestRequest;
 use App\Http\Requests\StoreAccessRequestRequest;
 use App\Models\AccessRequest;
+use App\Services\AccessRequestDecisionService;
+use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,9 +16,6 @@ use Throwable;
 
 class AdminAccessRequestController extends Controller
 {
-    /**
-     * Display professional-access applications.
-     */
     public function index(
         Request $request
     ): Response {
@@ -47,25 +47,33 @@ class AdminAccessRequestController extends Controller
             );
         }
 
-        $accessRequests = $query
-            ->paginate(20)
-            ->withQueryString();
+        $accessRequests =
+            $query
+                ->paginate(20)
+                ->withQueryString();
 
-        $rawCounts = AccessRequest::query()
-            ->selectRaw(
-                'status, COUNT(*) as total'
-            )
-            ->groupBy('status')
-            ->pluck(
-                'total',
-                'status'
-            );
+        $rawCounts =
+            AccessRequest::query()
+                ->selectRaw(
+                    'status, COUNT(*) as total'
+                )
+                ->groupBy('status')
+                ->pluck(
+                    'total',
+                    'status'
+                );
 
         $counts = [];
 
-        foreach (AccessRequest::STATUSES as $state) {
+        foreach (
+            AccessRequest::STATUSES
+            as $state
+        ) {
             $counts[$state] =
-                (int) ($rawCounts[$state] ?? 0);
+                (int) (
+                    $rawCounts[$state]
+                    ?? 0
+                );
         }
 
         $counts['all'] =
@@ -101,9 +109,6 @@ class AdminAccessRequestController extends Controller
             );
     }
 
-    /**
-     * Display one application and its immutable lifecycle history.
-     */
     public function show(
         AccessRequest $accessRequest
     ): Response {
@@ -171,31 +176,25 @@ class AdminAccessRequestController extends Controller
             );
     }
 
-    /**
-     * Redirect an authorized administrator to a short-lived private
-     * verification-document URL.
-     */
     public function proof(
         AccessRequest $accessRequest
     ): RedirectResponse {
         if (
-            $accessRequest->proof_deleted_at
+            $accessRequest
+                ->proof_deleted_at
             !== null
         ) {
             abort(404);
         }
 
-        $diskName = (string)
+        $diskName =
+            (string)
             $accessRequest->proof_disk;
 
-        $objectKey = (string)
+        $objectKey =
+            (string)
             $accessRequest->proof_object_key;
 
-        /*
-         * Defense in depth:
-         * never permit this endpoint to become a generic arbitrary-disk
-         * redirector even if a database row were modified unexpectedly.
-         */
         if (
             $diskName
                 !== 'professional_verifications'
@@ -205,11 +204,16 @@ class AdminAccessRequestController extends Controller
         }
 
         try {
-            $disk = Storage::disk(
-                $diskName
-            );
+            $disk =
+                Storage::disk(
+                    $diskName
+                );
 
-            if (! $disk->exists($objectKey)) {
+            if (
+                ! $disk->exists(
+                    $objectKey
+                )
+            ) {
                 abort(404);
             }
 
@@ -234,16 +238,90 @@ class AdminAccessRequestController extends Controller
         }
 
         return redirect()
-            ->away($temporaryUrl)
+            ->away(
+                $temporaryUrl
+            )
             ->withHeaders([
                 'Cache-Control' =>
                     'private, no-store, max-age=0',
             ]);
     }
 
+    public function approve(
+        Request $request,
+        AccessRequest $accessRequest,
+        AccessRequestDecisionService $decisionService
+    ): RedirectResponse {
+        try {
+            $result =
+                $decisionService->approve(
+                    $accessRequest,
+                    $request->user()
+                );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'decision' =>
+                    $exception->getMessage(),
+            ]);
+        }
+
+        if (
+            $result['setup_email_sent']
+        ) {
+            return redirect()
+                ->route(
+                    'admin.access-requests.show',
+                    $accessRequest
+                )
+                ->with(
+                    'status',
+                    'Access request approved. A doctor account was created and the secure password-setup email was sent.'
+                );
+        }
+
+        return redirect()
+            ->route(
+                'admin.access-requests.show',
+                $accessRequest
+            )
+            ->with(
+                'warning',
+                'Access request approved and the doctor account was created, but the password-setup email could not be delivered. The account remains inaccessible because its provisional password is unknown.'
+            );
+    }
+
+    public function reject(
+        RejectAccessRequestRequest $request,
+        AccessRequest $accessRequest,
+        AccessRequestDecisionService $decisionService
+    ): RedirectResponse {
+        try {
+            $decisionService->reject(
+                $accessRequest,
+                $request->user(),
+                $request->validated(
+                    'rejection_reason'
+                )
+            );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'decision' =>
+                    $exception->getMessage(),
+            ]);
+        }
+
+        return redirect()
+            ->route(
+                'admin.access-requests.show',
+                $accessRequest
+            )
+            ->with(
+                'status',
+                'Access request rejected. No RETINA user account was created.'
+            );
+    }
+
     /**
-     * Human-readable lifecycle labels.
-     *
      * @return array<string, string>
      */
     private function statusLabels(): array

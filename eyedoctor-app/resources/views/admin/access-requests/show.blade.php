@@ -137,23 +137,343 @@
         </div>
 
 
-        <div
-            class="mt-6
-                   rounded-xl
-                   border
-                   border-amber-800/50
-                   bg-amber-950/20
-                   px-4 py-3"
-        >
-            <p
-                class="text-xs
-                       leading-5
-                       text-amber-200"
+        @if (session('status'))
+
+            <div
+                class="mt-6
+                       rounded-xl
+                       border
+                       border-emerald-800/60
+                       bg-emerald-950/25
+                       px-4 py-3"
             >
-                Read-only review checkpoint. No approval, rejection,
-                role assignment, or account creation action is enabled yet.
-            </p>
-        </div>
+                <p
+                    class="text-sm
+                           text-emerald-200"
+                >
+                    {{ session('status') }}
+                </p>
+            </div>
+
+        @endif
+
+
+        @if (session('warning'))
+
+            <div
+                class="mt-6
+                       rounded-xl
+                       border
+                       border-amber-800/60
+                       bg-amber-950/25
+                       px-4 py-3"
+            >
+                <p
+                    class="text-sm
+                           text-amber-200"
+                >
+                    {{ session('warning') }}
+                </p>
+            </div>
+
+        @endif
+
+
+        @error('decision')
+
+            <div
+                class="mt-6
+                       rounded-xl
+                       border
+                       border-red-800/60
+                       bg-red-950/25
+                       px-4 py-3"
+            >
+                <p
+                    class="text-sm
+                           text-red-200"
+                >
+                    {{ $message }}
+                </p>
+            </div>
+
+        @enderror
+
+
+        @if (
+            $accessRequest->isPendingReview()
+            && $accessRequest->email_verified_at
+        )
+
+            <section
+                class="mt-6
+                       rounded-xl
+                       border
+                       border-[#334155]
+                       bg-[#0f172a]
+                       p-5"
+            >
+
+                <h2
+                    class="text-lg
+                           font-bold"
+                >
+                    Administrative decision
+                </h2>
+
+
+                <p
+                    class="mt-1
+                           text-sm
+                           leading-6
+                           text-[#94a3b8]"
+                >
+                    Approval creates a doctor account and sends a secure
+                    first-time password setup link. Rejection creates no
+                    user account.
+                </p>
+
+
+                <div
+                    class="mt-5
+                           grid
+                           gap-5
+                           lg:grid-cols-2"
+                >
+
+                    <div
+                        class="rounded-xl
+                               border
+                               border-emerald-800/50
+                               bg-emerald-950/15
+                               p-4"
+                    >
+
+                        <h3
+                            class="font-semibold
+                                   text-emerald-300"
+                        >
+                            Approve request
+                        </h3>
+
+
+                        <p
+                            class="mt-1
+                                   text-xs
+                                   leading-5
+                                   text-[#94a3b8]"
+                        >
+                            A doctor account will be created using the
+                            applicant's verified email address.
+                        </p>
+
+
+                        <form
+                            method="POST"
+                            action="{{ route(
+                                'admin.access-requests.approve',
+                                $accessRequest
+                            ) }}"
+                            class="mt-4"
+                            onsubmit="return confirm('Approve this professional access request and create a doctor account?');"
+                        >
+
+                            @csrf
+
+
+                            <button
+                                type="submit"
+                                class="rounded-lg
+                                       bg-emerald-400
+                                       px-4 py-2.5
+                                       text-sm
+                                       font-bold
+                                       text-emerald-950
+                                       transition
+                                       hover:bg-emerald-300"
+                            >
+                                Approve and create doctor account
+                            </button>
+
+                        </form>
+
+                    </div>
+
+
+                    <div
+                        class="rounded-xl
+                               border
+                               border-rose-800/50
+                               bg-rose-950/15
+                               p-4"
+                    >
+
+                        <h3
+                            class="font-semibold
+                                   text-rose-300"
+                        >
+                            Reject request
+                        </h3>
+
+
+                        <p
+                            class="mt-1
+                                   text-xs
+                                   leading-5
+                                   text-[#94a3b8]"
+                        >
+                            Record an internal reason for the administrative
+                            decision. No user account will be created.
+                        </p>
+
+
+                        <form
+                            method="POST"
+                            action="{{ route(
+                                'admin.access-requests.reject',
+                                $accessRequest
+                            ) }}"
+                            class="mt-4"
+                            onsubmit="return confirm('Reject this professional access request?');"
+                        >
+
+                            @csrf
+
+
+                            <label
+                                for="rejection_reason"
+                                class="block
+                                       text-xs
+                                       font-semibold
+                                       uppercase
+                                       tracking-wider
+                                       text-[#cbd5e1]"
+                            >
+                                Internal rejection reason
+                            </label>
+
+
+                            <textarea
+                                id="rejection_reason"
+                                name="rejection_reason"
+                                rows="4"
+                                maxlength="2000"
+                                required
+                                class="mt-2
+                                       block
+                                       w-full
+                                       rounded-lg
+                                       border
+                                       border-[#475569]
+                                       bg-[#111827]
+                                       px-3 py-2.5
+                                       text-sm
+                                       text-[#f1f5f9]
+                                       focus:border-rose-400
+                                       focus:outline-none
+                                       focus:ring-1
+                                       focus:ring-rose-400"
+                            >{{ old('rejection_reason') }}</textarea>
+
+
+                            @error('rejection_reason')
+                                <p
+                                    class="mt-2
+                                           text-xs
+                                           text-red-300"
+                                >
+                                    {{ $message }}
+                                </p>
+                            @enderror
+
+
+                            <button
+                                type="submit"
+                                class="mt-3
+                                       rounded-lg
+                                       border
+                                       border-rose-700
+                                       bg-rose-950/40
+                                       px-4 py-2.5
+                                       text-sm
+                                       font-bold
+                                       text-rose-300
+                                       transition
+                                       hover:bg-rose-900/40"
+                            >
+                                Reject request
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        @elseif ($accessRequest->isApproved())
+
+            <div
+                class="mt-6
+                       rounded-xl
+                       border
+                       border-emerald-800/50
+                       bg-emerald-950/20
+                       px-4 py-3
+                       text-sm
+                       text-emerald-200"
+            >
+                This request has been approved.
+
+                @if ($accessRequest->approvedUser)
+                    Doctor account:
+                    {{ $accessRequest->approvedUser->email }}.
+                @endif
+
+                @if ($accessRequest->account_setup_sent_at)
+                    Password setup invitation sent
+                    {{ $accessRequest->account_setup_sent_at->format('M d, Y g:i A') }}.
+                @else
+                    Password setup invitation has not been recorded as sent.
+                @endif
+            </div>
+
+        @elseif ($accessRequest->isRejected())
+
+            <div
+                class="mt-6
+                       rounded-xl
+                       border
+                       border-rose-800/50
+                       bg-rose-950/20
+                       px-4 py-3"
+            >
+
+                <p
+                    class="text-sm
+                           font-semibold
+                           text-rose-200"
+                >
+                    This request was rejected.
+                </p>
+
+
+                @if ($accessRequest->rejection_reason)
+
+                    <p
+                        class="mt-2
+                               whitespace-pre-wrap
+                               text-sm
+                               leading-6
+                               text-[#cbd5e1]"
+                    >{{ $accessRequest->rejection_reason }}</p>
+
+                @endif
+
+            </div>
+
+        @endif
 
 
         {{-- APPLICANT --}}

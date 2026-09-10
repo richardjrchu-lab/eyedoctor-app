@@ -100,6 +100,22 @@ Route::middleware([
             ->middleware('throttle:30,1')
             ->name('access-requests.proof');
 
+
+        Route::post(
+            '/access-requests/{accessRequest:public_id}/approve',
+            [AdminAccessRequestController::class, 'approve']
+        )
+            ->middleware('throttle:10,1')
+            ->name('access-requests.approve');
+
+
+        Route::post(
+            '/access-requests/{accessRequest:public_id}/reject',
+            [AdminAccessRequestController::class, 'reject']
+        )
+            ->middleware('throttle:10,1')
+            ->name('access-requests.reject');
+
     });
 
 
