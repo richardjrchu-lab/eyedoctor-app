@@ -45,6 +45,7 @@ class MobileAppController extends Controller
         );
 
         $apkPath = config('retina.mobile.apk_path');
+
         $downloadName = config(
             'retina.mobile.download_name',
             'RETINA-Android.apk'
@@ -62,36 +63,33 @@ class MobileAppController extends Controller
                     );
             }
 
-            $stream = $disk->readStream($apkPath);
-
-            if ($stream === false) {
-                throw new \RuntimeException(
-                    'Unable to open the APK storage stream.'
-                );
-            }
-
-            Log::info('RETINA Android application downloaded.', [
-                'user_id' => $user->id,
-            ]);
-
-            return response()->streamDownload(
-                function () use ($stream) {
-                    fpassthru($stream);
-
-                    if (is_resource($stream)) {
-                        fclose($stream);
-                    }
-                },
-                $downloadName,
+            /*
+             * Generate a short-lived signed Cloudflare R2 URL.
+             *
+             * Laravel performs authentication and authorization first.
+             * The APK is then downloaded directly from the private R2
+             * bucket instead of being proxied through the Render server.
+             */
+            $temporaryUrl = $disk->temporaryUrl(
+                $apkPath,
+                now()->addMinutes(5),
                 [
-                    'Content-Type' => 'application/vnd.android.package-archive',
-                    'Cache-Control' => 'private, no-store, max-age=0',
-                    'Pragma' => 'no-cache',
-                    'X-Content-Type-Options' => 'nosniff',
+                    'ResponseContentType' =>
+                        'application/vnd.android.package-archive',
+
+                    'ResponseContentDisposition' =>
+                        'attachment; filename="' . $downloadName . '"',
                 ]
             );
+
+            Log::info('RETINA Android download authorized.', [
+                'user_id' => $user->id,
+                'expires_in_minutes' => 5,
+            ]);
+
+            return redirect()->away($temporaryUrl);
         } catch (\Throwable $e) {
-            Log::error('RETINA APK download failed.', [
+            Log::error('RETINA APK download authorization failed.', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
