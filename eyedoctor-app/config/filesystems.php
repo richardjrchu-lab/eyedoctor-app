@@ -43,10 +43,11 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | Retinal Image Storage
+        | Retinal Image Storage — Supabase
         |--------------------------------------------------------------------------
         |
-        | Existing private Supabase bucket used for retinal fundus images.
+        | Private Supabase Storage bucket used for retinal fundus images.
+        | These credentials remain completely separate from Cloudflare R2.
         |
         */
 
@@ -69,28 +70,28 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | RETINA Private Application Downloads
+        | RETINA Android Downloads — Cloudflare R2
         |--------------------------------------------------------------------------
         |
-        | Separate private Supabase bucket containing approved application
-        | release packages. Files from this disk are never linked publicly.
+        | Private Cloudflare R2 bucket containing approved RETINA Android
+        | release packages.
         |
-        | Access is provided only through Laravel's authenticated,
-        | role-protected download route.
+        | This disk uses a dedicated read-only R2 credential and does not
+        | share the Supabase retinal-image credentials above.
         |
         */
 
         'app_downloads' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('APP_DOWNLOADS_BUCKET'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env(
-                'AWS_USE_PATH_STYLE_ENDPOINT',
-                false
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env(
+                'R2_BUCKET',
+                'retina-app-downloads'
             ),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
             'visibility' => 'private',
             'throw' => true,
             'report' => false,
