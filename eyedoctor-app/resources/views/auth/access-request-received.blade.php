@@ -122,6 +122,29 @@
         >
 
             <a
+                href="{{ route(
+                    'access-request.resend-verification.create'
+                ) }}"
+                class="inline-flex
+                       items-center
+                       justify-center
+                       rounded-lg
+                       border
+                       border-[#334155]
+                       bg-[#0f172a]
+                       px-5 py-2.5
+                       text-sm
+                       font-semibold
+                       text-[#94a3b8]
+                       transition
+                       hover:border-[#475569]
+                       hover:text-[#f1f5f9]"
+            >
+                Resend verification email
+            </a>
+
+
+            <a
                 href="{{ route('login') }}"
                 class="inline-flex
                        items-center

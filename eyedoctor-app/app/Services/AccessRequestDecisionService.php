@@ -186,7 +186,8 @@ class AccessRequestDecisionService
         $setupEmailSent =
             $this->sendAccountSetup(
                 $result['request_id'],
-                $result['user']
+                $result['user'],
+                null
             );
 
         return [
@@ -286,12 +287,106 @@ class AccessRequestDecisionService
     }
 
     /**
+     * Send a fresh account-setup invitation for an already approved request.
+     */
+    public function resendAccountSetup(
+        AccessRequest $accessRequest,
+        User $administrator
+    ): bool {
+        if (! $administrator->hasRole('admin')) {
+            throw new DomainException(
+                'Only administrators can resend account setup invitations.'
+            );
+        }
+
+        $result = DB::transaction(
+            function () use ($accessRequest): array {
+                $lockedRequest =
+                    AccessRequest::query()
+                        ->lockForUpdate()
+                        ->findOrFail(
+                            $accessRequest->id
+                        );
+
+                if (! $lockedRequest->isApproved()) {
+                    throw new DomainException(
+                        'Only approved access requests can receive an account setup invitation.'
+                    );
+                }
+
+                if (
+                    $lockedRequest
+                        ->approved_user_id
+                    === null
+                ) {
+                    throw new DomainException(
+                        'This approved request no longer has an associated RETINA account.'
+                    );
+                }
+
+                $user =
+                    User::query()
+                        ->find(
+                            $lockedRequest
+                                ->approved_user_id
+                        );
+
+                if ($user === null) {
+                    throw new DomainException(
+                        'The associated RETINA account could not be found.'
+                    );
+                }
+
+                if (! $user->hasRole('doctor')) {
+                    throw new DomainException(
+                        'The associated account is not authorized as a doctor.'
+                    );
+                }
+
+                if (
+                    mb_strtolower(
+                        trim($user->email)
+                    )
+                    !==
+                    mb_strtolower(
+                        trim(
+                            $lockedRequest
+                                ->email_normalized
+                        )
+                    )
+                ) {
+                    throw new DomainException(
+                        'The approved account email no longer matches the verified application.'
+                    );
+                }
+
+                return [
+                    'request_id' =>
+                        $lockedRequest->id,
+
+                    'user' =>
+                        $user,
+                ];
+            },
+            3
+        );
+
+        return $this->sendAccountSetup(
+            $result['request_id'],
+            $result['user'],
+            $administrator
+        );
+    }
+
+
+    /**
      * Send the approved applicant a short-lived Laravel password-reset
      * token that functions as the first-time account setup invitation.
      */
     private function sendAccountSetup(
         int $accessRequestId,
-        User $user
+        User $user,
+        ?User $actor
     ): bool {
         $broker =
             Password::broker();
@@ -333,7 +428,8 @@ class AccessRequestDecisionService
             DB::transaction(
                 function () use (
                     $accessRequestId,
-                    $user
+                    $user,
+                    $actor
                 ): void {
                     $lockedRequest =
                         AccessRequest::query()
@@ -368,10 +464,12 @@ class AccessRequestDecisionService
                             'account_setup_sent',
 
                         'actor_type' =>
-                            AccessRequestEvent::ACTOR_SYSTEM,
+                            $actor === null
+                                ? AccessRequestEvent::ACTOR_SYSTEM
+                                : AccessRequestEvent::ACTOR_ADMIN,
 
                         'actor_user_id' =>
-                            null,
+                            $actor?->id,
 
                         'from_status' =>
                             AccessRequest::STATUS_APPROVED,

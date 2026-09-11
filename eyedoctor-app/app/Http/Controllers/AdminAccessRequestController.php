@@ -290,6 +290,49 @@ class AdminAccessRequestController extends Controller
             );
     }
 
+    public function resendSetup(
+        Request $request,
+        AccessRequest $accessRequest,
+        AccessRequestDecisionService $decisionService
+    ): RedirectResponse {
+        try {
+            $sent =
+                $decisionService
+                    ->resendAccountSetup(
+                        $accessRequest,
+                        $request->user()
+                    );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'decision' =>
+                    $exception->getMessage(),
+            ]);
+        }
+
+        if ($sent) {
+            return redirect()
+                ->route(
+                    'admin.access-requests.show',
+                    $accessRequest
+                )
+                ->with(
+                    'status',
+                    'A fresh password-setup email was sent to the approved doctor.'
+                );
+        }
+
+        return redirect()
+            ->route(
+                'admin.access-requests.show',
+                $accessRequest
+            )
+            ->with(
+                'warning',
+                'The password-setup email could not be delivered. The approved account remains protected and another resend can be attempted later.'
+            );
+    }
+
+
     public function reject(
         RejectAccessRequestRequest $request,
         AccessRequest $accessRequest,

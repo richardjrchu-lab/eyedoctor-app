@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccessRequestController;
+use App\Http\Controllers\AccessRequestVerificationResendController;
 use App\Http\Controllers\VerifyAccessRequestEmailController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
@@ -42,6 +43,22 @@ Route::middleware('guest')->group(function () {
     )
         ->middleware('throttle:30,1')
         ->name('access-request.received');
+
+
+    Route::get(
+        'request-access/resend-verification',
+        [AccessRequestVerificationResendController::class, 'create']
+    )
+        ->middleware('throttle:30,1')
+        ->name('access-request.resend-verification.create');
+
+
+    Route::post(
+        'request-access/resend-verification',
+        [AccessRequestVerificationResendController::class, 'store']
+    )
+        ->middleware('throttle:3,60')
+        ->name('access-request.resend-verification.store');
 
 
     Route::get(

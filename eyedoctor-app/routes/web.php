@@ -68,8 +68,8 @@ Route::middleware([
 | Administrator Access Review
 |--------------------------------------------------------------------------
 |
-| Read-only professional-access review.
-| Decision actions are intentionally added in a later checkpoint.
+| Protected professional-access review, decisions, and recovery actions.
+| All mutations remain restricted to authenticated administrators.
 |
 */
 
@@ -115,6 +115,15 @@ Route::middleware([
         )
             ->middleware('throttle:10,1')
             ->name('access-requests.reject');
+
+
+        Route::post(
+            '/access-requests/{accessRequest:public_id}/resend-setup',
+            [AdminAccessRequestController::class, 'resendSetup']
+        )
+            ->middleware('throttle:3,60')
+            ->name('access-requests.resend-setup');
+
 
     });
 

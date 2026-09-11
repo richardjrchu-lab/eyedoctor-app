@@ -437,6 +437,46 @@
                 @else
                     Password setup invitation has not been recorded as sent.
                 @endif
+
+
+                @if ($accessRequest->approvedUser)
+
+                    <form
+                        method="POST"
+                        action="{{ route(
+                            'admin.access-requests.resend-setup',
+                            $accessRequest
+                        ) }}"
+                        class="mt-4"
+                        onsubmit="return confirm('Send a fresh password-setup email to this approved doctor?');"
+                    >
+
+                        @csrf
+
+
+                        <button
+                            type="submit"
+                            class="rounded-lg
+                                   border
+                                   border-emerald-700
+                                   bg-emerald-950/30
+                                   px-4 py-2.5
+                                   text-sm
+                                   font-bold
+                                   text-emerald-300
+                                   transition
+                                   hover:bg-emerald-900/40"
+                        >
+                            {{ $accessRequest->account_setup_sent_at
+                                ? 'Resend password setup email'
+                                : 'Send password setup email'
+                            }}
+                        </button>
+
+                    </form>
+
+                @endif
+
             </div>
 
         @elseif ($accessRequest->isRejected())
