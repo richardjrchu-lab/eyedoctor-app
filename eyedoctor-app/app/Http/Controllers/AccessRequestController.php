@@ -3,16 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAccessRequestRequest;
-use App\Models\AccessRequest;
-use App\Models\AccessRequestEvent;
-use App\Models\User;
+use App\Services\AccessRequestSubmissionService;
 use App\Services\AccessRequestVerificationService;
 use App\Services\DatabaseConnectionRetry;
 use App\Services\TurnstileVerifier;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,6 +20,7 @@ class AccessRequestController extends Controller
 {
     public function __construct(
         private readonly AccessRequestVerificationService $verificationService,
+        private readonly AccessRequestSubmissionService $submissionService,
         private readonly TurnstileVerifier $turnstileVerifier,
         private readonly DatabaseConnectionRetry $databaseRetry
     ) {
@@ -113,22 +111,23 @@ class AccessRequestController extends Controller
         $email = (string) $validated['email'];
 
         /*
-         * Do not create duplicate applications for an existing RETINA user
-         * or an email address that already has an application.
+         * Existing RETINA users and non-rejected applications remain blocked.
          *
-         * The response is deliberately identical to a successful submission
-         * so this public endpoint cannot be used for account enumeration.
+         * A rejected application is intentionally eligible for resubmission.
+         * The public response remains generic either way so this endpoint
+         * cannot be used for account or application enumeration.
          */
         try {
-            $emailAlreadyKnown =
+            $emailBlocked =
                 $this->databaseRetry->run(
                     fn (): bool =>
-                        $this->emailIsAlreadyKnown(
-                            $email
-                        )
+                        $this->submissionService
+                            ->emailBlocksSubmission(
+                                $email
+                            )
                 );
 
-            if ($emailAlreadyKnown) {
+            if ($emailBlocked) {
                 return $this->receivedResponse();
             }
         } catch (Throwable $exception) {
@@ -209,141 +208,35 @@ class AccessRequestController extends Controller
          * behind.
          */
         try {
-            $accessRequest = DB::transaction(
-                function () use (
-                    $validated,
-                    $email,
-                    $proof
-                ): ?AccessRequest {
-                    /*
-                     * Repeat the duplicate check inside the transaction.
-                     *
-                     * This narrows the race window between the initial
-                     * preflight check and persistence. The database's unique
-                     * normalized-email constraint remains the final authority.
-                     */
-                    if ($this->emailIsAlreadyKnown($email)) {
-                        return null;
-                    }
+            $submission =
+                $this->submissionService->persist(
+                    validated:
+                        $validated,
 
-                    $now = now();
+                    email:
+                        $email,
 
-                    $licenseNumber =
-                        $validated['license_registration_number']
-                        ?? null;
+                    proof:
+                        $proof,
 
-                    $accessRequest = AccessRequest::create([
-                        'full_name' =>
-                            $validated['full_name'],
+                    proofDisk:
+                        self::PROOF_DISK,
 
-                        'email' =>
-                            $email,
+                    privacyNoticeVersion:
+                        self::PRIVACY_NOTICE_VERSION,
 
-                        'profession' =>
-                            $validated['profession'],
-
-                        'institution' =>
-                            $validated['institution'],
-
-                        'department_position' =>
-                            $validated['department_position']
-                            ?? null,
-
-                        /*
-                         * AccessRequest encrypts the full registration number
-                         * using Laravel's encrypted Eloquent cast.
-                         */
-                        'license_registration_number' =>
-                            $licenseNumber,
-
-                        /*
-                         * The browser is prohibited from setting this value.
-                         * It is derived on the server only.
-                         */
-                        'license_registration_last4' =>
-                            $this->registrationLastFour(
-                                $licenseNumber
-                            ),
-
-                        'proof_type' =>
-                            $validated['proof_type'],
-
-                        'proof_disk' =>
-                            self::PROOF_DISK,
-
-                        'proof_object_key' =>
-                            $proof['object_key'],
-
-                        'proof_mime_type' =>
-                            $proof['mime_type'],
-
-                        'proof_size_bytes' =>
-                            $proof['size_bytes'],
-
-                        'proof_sha256' =>
-                            $proof['sha256'],
-
-                        'proof_uploaded_at' =>
-                            $now,
-
-                        'submission_count' =>
-                            1,
-
-                        'last_submitted_at' =>
-                            $now,
-
-                        /*
-                         * email_verification_sent_at intentionally remains
-                         * NULL until an email is actually sent.
-                         */
-                        'privacy_consent_at' =>
-                            $now,
-
-                        'privacy_notice_version' =>
-                            self::PRIVACY_NOTICE_VERSION,
-
-                        'appropriate_use_consent_at' =>
-                            $now,
-
-                        'appropriate_use_notice_version' =>
-                            self::APPROPRIATE_USE_NOTICE_VERSION,
-                    ]);
-
-                    /*
-                     * AccessRequest applies email_pending itself and validates
-                     * that the lifecycle status is one of the approved states.
-                     */
-                    $accessRequest->events()->create([
-                        'event_type' =>
-                            'submitted',
-
-                        'actor_type' =>
-                            AccessRequestEvent::ACTOR_APPLICANT,
-
-                        'actor_user_id' =>
-                            null,
-
-                        'from_status' =>
-                            null,
-
-                        'to_status' =>
-                            AccessRequest::STATUS_EMAIL_PENDING,
-                    ]);
-
-                    return $accessRequest;
-                },
-                3
-            );
+                    appropriateUseNoticeVersion:
+                        self::APPROPRIATE_USE_NOTICE_VERSION
+                );
 
             /*
-             * Another request may have created the same application between
-             * our preflight check and transaction.
+             * Another request/account may have become active between
+             * preflight and persistence.
              *
-             * In that case no database row was created by this submission,
-             * so remove its newly uploaded object and return the same generic
-             * response used for successful submissions.
+             * Return the same generic response and remove the newly uploaded
+             * object so no duplicate/orphaned proof remains.
              */
-            if ($accessRequest === null) {
+            if ($submission === null) {
                 $this->deleteUploadedProof(
                     $disk,
                     $proof['object_key']
@@ -351,10 +244,16 @@ class AccessRequestController extends Controller
 
                 return $this->receivedResponse();
             }
+
+            $accessRequest =
+                $submission['access_request'];
+
+            $replacedProofKey =
+                $submission['replaced_proof_key'];
         } catch (Throwable $exception) {
             /*
-             * Database persistence failed after the proof was uploaded.
-             * Remove the object as compensating cleanup.
+             * Database persistence failed after the new proof was uploaded.
+             * Remove only the newly uploaded object.
              */
             $this->deleteUploadedProof(
                 $disk,
@@ -367,6 +266,25 @@ class AccessRequestController extends Controller
             );
 
             return $this->processingFailureResponse();
+        }
+
+        /*
+         * A successful rejected-request resubmission now points at the new
+         * proof. Remove the old proof only AFTER the database commit succeeds.
+         *
+         * deleteUploadedProof() is best-effort and logs storage failures
+         * without applicant PII.
+         */
+        if (
+            is_string($replacedProofKey)
+            && $replacedProofKey !== ''
+            && $replacedProofKey
+                !== $proof['object_key']
+        ) {
+            $this->deleteUploadedProof(
+                $disk,
+                $replacedProofKey
+            );
         }
 
         /*
@@ -392,31 +310,6 @@ class AccessRequestController extends Controller
         }
 
         return $this->receivedResponse();
-    }
-
-    /**
-     * Determine whether this email already belongs to an account or request.
-     *
-     * The supplied email has already been normalized to lowercase by the
-     * FormRequest.
-     */
-    private function emailIsAlreadyKnown(
-        string $email
-    ): bool {
-        if (
-            AccessRequest::query()
-                ->where('email_normalized', $email)
-                ->exists()
-        ) {
-            return true;
-        }
-
-        return User::query()
-            ->whereRaw(
-                'LOWER(email) = ?',
-                [$email]
-            )
-            ->exists();
     }
 
     /**
@@ -600,35 +493,6 @@ class AccessRequestController extends Controller
                 ]
             );
         }
-    }
-
-    /**
-     * Generate the masked-display suffix without trusting browser input.
-     */
-    private function registrationLastFour(
-        ?string $registrationNumber
-    ): ?string {
-        if ($registrationNumber === null) {
-            return null;
-        }
-
-        $compact = preg_replace(
-            '/[^A-Za-z0-9]/',
-            '',
-            $registrationNumber
-        );
-
-        if (
-            ! is_string($compact)
-            || $compact === ''
-        ) {
-            return null;
-        }
-
-        return substr(
-            $compact,
-            -4
-        );
     }
 
     /**
