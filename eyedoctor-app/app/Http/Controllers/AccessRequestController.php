@@ -7,6 +7,7 @@ use App\Models\AccessRequest;
 use App\Models\AccessRequestEvent;
 use App\Models\User;
 use App\Services\AccessRequestVerificationService;
+use App\Services\DatabaseConnectionRetry;
 use App\Services\TurnstileVerifier;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,8 @@ class AccessRequestController extends Controller
 {
     public function __construct(
         private readonly AccessRequestVerificationService $verificationService,
-        private readonly TurnstileVerifier $turnstileVerifier
+        private readonly TurnstileVerifier $turnstileVerifier,
+        private readonly DatabaseConnectionRetry $databaseRetry
     ) {
     }
 
@@ -118,7 +120,15 @@ class AccessRequestController extends Controller
          * so this public endpoint cannot be used for account enumeration.
          */
         try {
-            if ($this->emailIsAlreadyKnown($email)) {
+            $emailAlreadyKnown =
+                $this->databaseRetry->run(
+                    fn (): bool =>
+                        $this->emailIsAlreadyKnown(
+                            $email
+                        )
+                );
+
+            if ($emailAlreadyKnown) {
                 return $this->receivedResponse();
             }
         } catch (Throwable $exception) {
@@ -629,7 +639,9 @@ class AccessRequestController extends Controller
     private function receivedResponse(): RedirectResponse
     {
         return redirect()
-            ->route('access-request.received');
+            ->route(
+                'access-request.received'
+            );
     }
 
     /**

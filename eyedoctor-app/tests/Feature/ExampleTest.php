@@ -1,7 +1,9 @@
 <?php
 
-it('returns a successful response', function () {
+test('guest is redirected to login from doctor workspace', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(
+        route('login', absolute: false)
+    );
 });

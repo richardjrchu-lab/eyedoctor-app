@@ -97,7 +97,7 @@ Route::middleware([
             '/access-requests/{accessRequest:public_id}/proof',
             [AdminAccessRequestController::class, 'proof']
         )
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:admin-access-request-proof')
             ->name('access-requests.proof');
 
 
@@ -105,7 +105,7 @@ Route::middleware([
             '/access-requests/{accessRequest:public_id}/approve',
             [AdminAccessRequestController::class, 'approve']
         )
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:admin-access-request-decision')
             ->name('access-requests.approve');
 
 
@@ -113,7 +113,7 @@ Route::middleware([
             '/access-requests/{accessRequest:public_id}/reject',
             [AdminAccessRequestController::class, 'reject']
         )
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:admin-access-request-decision')
             ->name('access-requests.reject');
 
 
@@ -121,7 +121,7 @@ Route::middleware([
             '/access-requests/{accessRequest:public_id}/resend-setup',
             [AdminAccessRequestController::class, 'resendSetup']
         )
-            ->middleware('throttle:3,60')
+            ->middleware('throttle:admin-access-request-setup-resend')
             ->name('access-requests.resend-setup');
 
 

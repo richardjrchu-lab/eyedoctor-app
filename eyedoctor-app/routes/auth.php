@@ -25,7 +25,7 @@ Route::middleware('guest')->group(function () {
         'request-access',
         [AccessRequestController::class, 'create']
     )
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:access-request-view')
         ->name('access-request.create');
 
 
@@ -33,7 +33,7 @@ Route::middleware('guest')->group(function () {
         'request-access',
         [AccessRequestController::class, 'store']
     )
-        ->middleware('throttle:5,60')
+        ->middleware('throttle:access-request-submit')
         ->name('access-request.store');
 
 
@@ -41,7 +41,7 @@ Route::middleware('guest')->group(function () {
         'request-access/received',
         [AccessRequestController::class, 'received']
     )
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:access-request-view')
         ->name('access-request.received');
 
 
@@ -49,7 +49,7 @@ Route::middleware('guest')->group(function () {
         'request-access/resend-verification',
         [AccessRequestVerificationResendController::class, 'create']
     )
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:access-request-view')
         ->name('access-request.resend-verification.create');
 
 
@@ -57,7 +57,7 @@ Route::middleware('guest')->group(function () {
         'request-access/resend-verification',
         [AccessRequestVerificationResendController::class, 'store']
     )
-        ->middleware('throttle:3,60')
+        ->middleware('throttle:access-request-resend')
         ->name('access-request.resend-verification.store');
 
 
@@ -116,7 +116,7 @@ Route::get(
 )
     ->middleware([
         'signed',
-        'throttle:6,1',
+        'throttle:access-request-verify',
     ])
     ->name('access-request.verify');
 
@@ -125,7 +125,7 @@ Route::view(
     'request-access/email-verified',
     'auth.access-request-email-verified'
 )
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:access-request-view')
     ->name('access-request.email-verified');
 
 
