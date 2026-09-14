@@ -244,9 +244,10 @@ Route::get('/__diag-proxy', function (\Illuminate\Http\Request $request) {
         'x_forwarded_proto' => $request->header('X-Forwarded-Proto'),
         'x_forwarded_host'  => $request->header('X-Forwarded-Host'),
         'x_forwarded_port'  => $request->header('X-Forwarded-Port'),
-        'x_forwarded_for'   => $request->header('X-Forwarded-For')
-            ? 'present'
-            : 'absent',
+        'x_forwarded_for'   => $request->header('X-Forwarded-For'),
+        'cf_connecting_ip'  => $request->header('CF-Connecting-IP'),
+        'x_real_ip'         => $request->header('X-Real-IP'),
+        'remote_addr'       => $request->server('REMOTE_ADDR'),
         'trusted_proxies'   => $request->getTrustedProxies(),
     ]);
 })->middleware([
