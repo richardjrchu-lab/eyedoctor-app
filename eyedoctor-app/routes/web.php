@@ -239,6 +239,7 @@ Route::get('/__diag-proxy', function (\Illuminate\Http\Request $request) {
         'host'              => $request->getHost(),
         'scheme_and_host'   => $request->getSchemeAndHttpHost(),
         'is_secure'         => $request->isSecure(),
+        'request_ip'        => $request->ip(),
         'app_url'           => config('app.url'),
         'x_forwarded_proto' => $request->header('X-Forwarded-Proto'),
         'x_forwarded_host'  => $request->header('X-Forwarded-Host'),

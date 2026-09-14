@@ -13,6 +13,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        /*
+         * Render terminates HTTPS at its edge and forwards the request to
+         * this container over HTTP. Trust only the original scheme header
+         * needed to reconstruct HTTPS requests correctly.
+         *
+         * This keeps signed URL verification consistent without changing
+         * Laravel's interpretation of forwarded client IPs, hosts, or ports.
+         */
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
