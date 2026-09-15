@@ -219,41 +219,4 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| TEMPORARY — Render Proxy Diagnostic
-|--------------------------------------------------------------------------
-|
-| Phase A only. Admin-authenticated production diagnostic used to confirm
-| how Laravel interprets Render's forwarded HTTPS proxy headers.
-| Remove immediately after the diagnosis is recorded.
-|
-*/
-
-Route::get('/__diag-proxy', function (\Illuminate\Http\Request $request) {
-    abort_unless(app()->environment('production'), 404);
-
-    return response()->json([
-        'scheme'            => $request->getScheme(),
-        'host'              => $request->getHost(),
-        'scheme_and_host'   => $request->getSchemeAndHttpHost(),
-        'is_secure'         => $request->isSecure(),
-        'request_ip'        => $request->ip(),
-        'resolved_client_ip' => app(\App\Services\ClientIpResolver::class)->resolve($request),
-        'app_url'           => config('app.url'),
-        'x_forwarded_proto' => $request->header('X-Forwarded-Proto'),
-        'x_forwarded_host'  => $request->header('X-Forwarded-Host'),
-        'x_forwarded_port'  => $request->header('X-Forwarded-Port'),
-        'x_forwarded_for'   => $request->header('X-Forwarded-For'),
-        'cf_connecting_ip'  => $request->header('CF-Connecting-IP'),
-        'x_real_ip'         => $request->header('X-Real-IP'),
-        'remote_addr'       => $request->server('REMOTE_ADDR'),
-        'trusted_proxies'   => $request->getTrustedProxies(),
-    ]);
-})->middleware([
-    'auth',
-    'role:admin',
-]);
-
 require __DIR__.'/auth.php';
