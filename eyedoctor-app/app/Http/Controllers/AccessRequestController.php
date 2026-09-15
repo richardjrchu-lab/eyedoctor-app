@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAccessRequestRequest;
 use App\Services\AccessRequestSubmissionService;
 use App\Services\AccessRequestVerificationService;
+use App\Services\ClientIpResolver;
 use App\Services\DatabaseConnectionRetry;
 use App\Services\TurnstileVerifier;
 use Illuminate\Contracts\View\View;
@@ -22,6 +23,7 @@ class AccessRequestController extends Controller
         private readonly AccessRequestVerificationService $verificationService,
         private readonly AccessRequestSubmissionService $submissionService,
         private readonly TurnstileVerifier $turnstileVerifier,
+        private readonly ClientIpResolver $clientIpResolver,
         private readonly DatabaseConnectionRetry $databaseRetry
     ) {
     }
@@ -99,7 +101,7 @@ class AccessRequestController extends Controller
             ! $this->turnstileVerifier->verify(
                 $validated['cf-turnstile-response']
                     ?? null,
-                $request->ip()
+                $this->clientIpResolver->resolve($request)
             )
         ) {
             return back()->withErrors([

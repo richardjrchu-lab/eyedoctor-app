@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\ClientIpResolver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,6 +18,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $clientIpResolver = app(ClientIpResolver::class);
+
         /*
          * Dedicated access-request rate limiters.
          *
@@ -27,28 +30,28 @@ class AppServiceProvider extends ServiceProvider
             'access-request-view',
             fn (Request $request) =>
                 Limit::perMinute(30)
-                    ->by($request->ip())
+                    ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'access-request-submit',
             fn (Request $request) =>
                 Limit::perHour(5)
-                    ->by($request->ip())
+                    ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'access-request-resend',
             fn (Request $request) =>
                 Limit::perHour(3)
-                    ->by($request->ip())
+                    ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'access-request-verify',
             fn (Request $request) =>
                 Limit::perMinute(6)
-                    ->by($request->ip())
+                    ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(

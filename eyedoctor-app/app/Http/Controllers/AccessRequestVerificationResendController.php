@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ResendAccessRequestVerificationRequest;
 use App\Models\AccessRequest;
 use App\Services\AccessRequestVerificationService;
+use App\Services\ClientIpResolver;
 use App\Services\TurnstileVerifier;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +26,8 @@ class AccessRequestVerificationResendController extends Controller
     public function store(
         ResendAccessRequestVerificationRequest $request,
         AccessRequestVerificationService $verificationService,
-        TurnstileVerifier $turnstileVerifier
+        TurnstileVerifier $turnstileVerifier,
+        ClientIpResolver $clientIpResolver
     ): RedirectResponse {
         $validated = $request->validated();
 
@@ -33,7 +35,7 @@ class AccessRequestVerificationResendController extends Controller
             ! $turnstileVerifier->verify(
                 $validated['cf-turnstile-response']
                     ?? null,
-                $request->ip()
+                $clientIpResolver->resolve($request)
             )
         ) {
             return back()
