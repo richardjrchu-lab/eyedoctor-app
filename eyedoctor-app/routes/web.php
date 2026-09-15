@@ -240,6 +240,7 @@ Route::get('/__diag-proxy', function (\Illuminate\Http\Request $request) {
         'scheme_and_host'   => $request->getSchemeAndHttpHost(),
         'is_secure'         => $request->isSecure(),
         'request_ip'        => $request->ip(),
+        'resolved_client_ip' => app(\App\Services\ClientIpResolver::class)->resolve($request),
         'app_url'           => config('app.url'),
         'x_forwarded_proto' => $request->header('X-Forwarded-Proto'),
         'x_forwarded_host'  => $request->header('X-Forwarded-Host'),
