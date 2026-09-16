@@ -47,6 +47,14 @@ $referralProb = $prediction->referable_probability;
                 <dt>Anonymized filename</dt>
                 <dd class="text-slate-200">{{ $image->anonymized_filename }}</dd>
             </div>
+            @if ($image->study_case_id)
+            <div class="flex justify-between">
+                <dt>Study case ID</dt>
+                <dd class="text-slate-200 font-mono">
+                    {{ $image->study_case_id }}
+                </dd>
+            </div>
+            @endif
             <div class="flex justify-between">
                 <dt>Validation status</dt>
                 <dd class="text-slate-200">{{ $image->validation_status }}</dd>

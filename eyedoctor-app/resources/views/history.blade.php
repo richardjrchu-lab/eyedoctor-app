@@ -142,6 +142,17 @@
                                 >
                                     {{ $image->anonymized_filename }}
                                 </span>
+                                @if ($image->study_case_id)
+                                    <span
+                                        class="mt-1 block
+                                               text-[10px]
+                                               font-mono
+                                               text-teal-300"
+                                    >
+                                        Study case:
+                                        {{ $image->study_case_id }}
+                                    </span>
+                                @endif
 
 
                                 <span
@@ -283,6 +294,17 @@
                                 >
                                     {{ $image->anonymized_filename }}
                                 </span>
+                                @if ($image->study_case_id)
+                                    <span
+                                        class="mt-1 block
+                                               text-[10px]
+                                               font-mono
+                                               text-teal-300"
+                                    >
+                                        Study case:
+                                        {{ $image->study_case_id }}
+                                    </span>
+                                @endif
 
 
                                 <span
