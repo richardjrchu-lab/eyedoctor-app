@@ -31,9 +31,33 @@ class PredictionController extends Controller
         ImageSanitizer $imageSanitizer
     )
     {
-        // 1. Validate the upload before anything else touches it
+        // 1. Normalize the optional research case ID before validation.
+        //    Ordinary clinical screening leaves this value null.
+        $studyCaseId = $request->input('study_case_id');
+
+        if (is_string($studyCaseId)) {
+            $studyCaseId = strtoupper(trim($studyCaseId));
+            $studyCaseId = $studyCaseId !== ''
+                ? $studyCaseId
+                : null;
+        } else {
+            $studyCaseId = null;
+        }
+
+        $request->merge([
+            'study_case_id' => $studyCaseId,
+        ]);
+
+        // Validate the upload before anything else touches it.
+        // Formal evaluation IDs are limited to the frozen 20-case set.
         $request->validate([
             'file' => 'required|image|mimes:jpeg,png|max:10240', // 10MB max
+            'study_case_id' => [
+                'nullable',
+                'string',
+                'max:64',
+                'regex:/^RETINA-EVAL-(00[1-9]|01[0-9]|020)$/',
+            ],
         ]);
 
         $file = $request->file('file');
@@ -72,6 +96,7 @@ class PredictionController extends Controller
         // 4. Record the image
         $image = Image::create([
             'user_id' => $user->id,
+            'study_case_id' => $studyCaseId,
             'storage_path' => $storagePath,
             'anonymized_filename' => $anonymizedFilename,
             'validation_status' => 'valid',

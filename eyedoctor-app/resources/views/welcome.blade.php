@@ -139,6 +139,48 @@
 
                 </div>
 
+                <div class="mt-3">
+                    <label
+                        for="study_case_id"
+                        class="block text-[10px]
+                               font-mono uppercase
+                               text-slate-400 mb-1"
+                    >
+                        Study Case ID
+                        <span class="text-slate-600">
+                            (optional)
+                        </span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="study_case_id"
+                        maxlength="64"
+                        autocomplete="off"
+                        spellcheck="false"
+                        oninput="this.value = this.value.toUpperCase()"
+                        placeholder="e.g. RETINA-EVAL-001"
+                        class="w-full rounded-lg
+                               border border-slate-700
+                               bg-slate-900
+                               px-3 py-2
+                               text-xs font-mono
+                               text-slate-200
+                               placeholder:text-slate-600
+                               focus:outline-none
+                               focus:border-teal-400"
+                    >
+
+                    <p
+                        class="mt-1 text-[10px]
+                               font-mono text-slate-500"
+                    >
+                        Formal evaluation only:
+                        RETINA-EVAL-001 to RETINA-EVAL-020.
+                        Never enter patient names or identifiers.
+                    </p>
+                </div>
+
 
 
                 {{-- ================================================= --}}
@@ -1418,6 +1460,19 @@
                 'file',
                 file
             );
+
+            const studyCaseId =
+                document
+                    .getElementById('study_case_id')
+                    .value
+                    .trim();
+
+            if (studyCaseId !== '') {
+                formData.append(
+                    'study_case_id',
+                    studyCaseId
+                );
+            }
 
 
             fetch(

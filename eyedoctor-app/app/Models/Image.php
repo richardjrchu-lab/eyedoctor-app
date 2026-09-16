@@ -11,6 +11,7 @@ class Image extends Model
 
     protected $fillable = [
         'user_id',
+        'study_case_id',
         'storage_path',
         'anonymized_filename',
         'validation_status',
