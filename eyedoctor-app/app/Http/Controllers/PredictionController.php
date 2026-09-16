@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Correction;
 use App\Models\Image;
 use App\Models\Prediction;
+use App\Services\ImageSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,10 @@ class PredictionController extends Controller
         'PDR' => 4,
     ];
 
-    public function predict(Request $request)
+    public function predict(
+        Request $request,
+        ImageSanitizer $imageSanitizer
+    )
     {
         // 1. Validate the upload before anything else touches it
         $request->validate([
@@ -34,15 +38,36 @@ class PredictionController extends Controller
 
         $file = $request->file('file');
         $user = $request->user();
-        $fileContents = file_get_contents($file);
 
-        // 2. Anonymized filename -- no original filename, no patient identifiers
-        $extension = $file->getClientOriginalExtension();
-        $anonymizedFilename = 'anonymousimage_' . Str::random(12) . '.' . $extension;
+        // 2. Read the temporary upload, sanitize it entirely in memory,
+        //    and immediately discard our reference to the original bytes.
+        //    Only the newly encoded PNG may reach persistent storage or
+        //    the model service.
+        $sourceBytes = file_get_contents($file->getRealPath());
+
+        if (! is_string($sourceBytes) || $sourceBytes === '') {
+            throw new \RuntimeException(
+                'Uploaded image could not be read safely.'
+            );
+        }
+
+        try {
+            $fileContents = $imageSanitizer->sanitizeToPng($sourceBytes);
+        } finally {
+            unset($sourceBytes);
+        }
+
+        // 3. RETINA-owned filename only. Never preserve the client's
+        //    filename or extension.
+        $anonymizedFilename = 'anonymousimage_' . Str::random(12) . '.png';
         $storagePath = 'uploads/' . $user->id . '/' . $anonymizedFilename;
 
         // 3. Upload to Supabase Storage
-        Storage::disk('s3')->put($storagePath, $fileContents);
+        Storage::disk('s3')->put(
+            $storagePath,
+            $fileContents,
+            ['ContentType' => 'image/png']
+        );
 
         // 4. Record the image
         $image = Image::create([
@@ -59,7 +84,10 @@ class PredictionController extends Controller
         //    max_execution_time turns it into an unhandled fatal.
         try {
             $response = Http::timeout(45)->attach(
-                'file', $fileContents, $anonymizedFilename
+                'file',
+                $fileContents,
+                $anonymizedFilename,
+                ['Content-Type' => 'image/png']
             )->post(config('services.fastapi.url') . '/predict');
         } catch (\Throwable $e) {
             Log::error('Model service unreachable', [
