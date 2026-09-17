@@ -184,9 +184,9 @@ The command must be safe to rerun.
 
 ## 8. Internal trigger endpoint
 
-GitHub Actions cannot directly execute Artisan inside the Render web container.
+Supabase Cron will trigger RETINA through one dedicated internal HTTP endpoint.
 
-Therefore RETINA will expose one internal POST endpoint whose only purpose is to trigger the Artisan retention command.
+RETINA will expose one internal POST endpoint whose only purpose is to invoke the fixed Artisan retention command.
 
 Requirements:
 
@@ -205,20 +205,20 @@ Requirements:
 
 The controller remains intentionally thin:
 
-authenticated request
+Supabase Cron
+→ authenticated POST request
 → invoke fixed Artisan command
 → return compact status
 
 Deletion logic remains exclusively inside the retention service.
-
 ## 9. Secret management
 
 Use one dedicated retention-trigger secret.
 
 The value must exist only in:
 
-- Render environment variables;
-- GitHub Actions repository secrets.
+- the Render environment variable `RETENTION_TRIGGER_SECRET`;
+- Supabase Vault for use by the scheduled Cron HTTP request.
 
 The secret must never be:
 
@@ -226,32 +226,43 @@ The secret must never be:
 - placed in `.env.example` as a real value;
 - pasted into source code;
 - shown in application logs;
+- stored directly in the Cron SQL definition;
 - sent in a URL query parameter.
 
-Only the environment-variable name may appear in source control.
+Only the environment-variable name and Vault secret name may appear in source control or documentation.
+## 10. Supabase Cron scheduler
 
-## 10. GitHub Actions scheduler
+Use Supabase Cron as the production scheduler.
 
-Create a scheduled workflow that runs once daily.
+Supabase Cron uses PostgreSQL `pg_cron` and can invoke HTTP endpoints through `pg_net`.
 
-Flow:
+Production flow:
 
-GitHub Actions
-→ POST production internal retention endpoint
-→ Render web service wakes if asleep
-→ authenticated endpoint
+Supabase Cron
+→ `pg_net` HTTPS POST
+→ RETINA internal retention endpoint
+→ authenticated secret header
 → `retina:purge-expired --limit=50`
 → retention service
 → Supabase Storage deletion
-→ DB state update
-→ purge audit log
+→ database state update
+→ retention purge audit log
 
-The workflow will also support manual dispatch for controlled verification.
+Requirements:
 
-The scheduled workflow must fail visibly when the HTTP trigger returns an unexpected status.
+- execute once daily;
+- use the RETINA production HTTPS endpoint;
+- obtain the trigger secret from Supabase Vault rather than embedding it in SQL;
+- send the secret only through the dedicated request header;
+- use a fixed JSON request body;
+- record Cron execution history in Supabase;
+- retain the application-level `retention_purge_logs` as the authoritative per-image audit trail.
 
-GitHub Actions scheduling is treated as operational automation, not the only evidence of retention compliance. The application-level purge audit provides the research/audit trail.
+Supabase Cron must not directly modify RETINA image rows or delete Storage objects.
 
+The scheduler only invokes the protected RETINA endpoint. All retention business logic remains inside the Laravel application.
+
+Manual dry-run verification will use the same protected endpoint with dry-run mode enabled before the live Cron job is activated.
 ## 11. UI behavior after purge
 
 ### Prediction Detail
@@ -353,20 +364,21 @@ Deployment sequence:
 
 1. merge only after full automated regression passes;
 2. Render runs database migrations through the existing deployment process;
-3. verify new columns/table exist;
-4. configure the retention-trigger secret in Render;
-5. configure the same value in GitHub Actions secrets;
-6. deploy the workflow;
-7. run production endpoint in a no-destructive verification state where possible;
+3. verify new columns and retention audit table exist;
+4. configure `RETENTION_TRIGGER_SECRET` in the Render environment;
+5. enable or confirm Supabase Cron (`pg_cron`) and `pg_net`;
+6. store the same retention trigger secret in Supabase Vault;
+7. manually invoke the production endpoint in dry-run mode;
 8. verify no current 2026 records are unexpectedly eligible;
 9. verify History and Prediction Detail still work;
 10. verify normal image retrieval still works;
-11. record the B3 production checkpoint.
+11. create the once-daily Supabase Cron HTTP job;
+12. verify the Cron job appears in Supabase and its execution history is available;
+13. record the B3 production checkpoint.
 
 No production record will be artificially backdated solely to test destructive deletion.
 
 Destructive purge behavior will be covered by automated tests and safe controlled non-production data.
-
 ## 16. Success criteria
 
 Phase B3 is complete only when:
@@ -381,7 +393,7 @@ Phase B3 is complete only when:
 - storage failures fail closed;
 - expired-image UI works;
 - internal trigger is secret-protected;
-- daily GitHub Actions scheduling is configured;
+- daily Supabase Cron scheduling is configured and production-verified;
 - full test suite passes;
 - production migration/deployment is verified;
 - existing recent production images remain available;
