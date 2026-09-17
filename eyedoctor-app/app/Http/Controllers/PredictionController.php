@@ -29,8 +29,7 @@ class PredictionController extends Controller
     public function predict(
         Request $request,
         ImageSanitizer $imageSanitizer
-    )
-    {
+    ) {
         // 1. Normalize the optional research case ID before validation.
         //    Ordinary clinical screening leaves this value null.
         $studyCaseId = $request->input('study_case_id');
@@ -83,8 +82,8 @@ class PredictionController extends Controller
 
         // 3. RETINA-owned filename only. Never preserve the client's
         //    filename or extension.
-        $anonymizedFilename = 'anonymousimage_' . Str::random(12) . '.png';
-        $storagePath = 'uploads/' . $user->id . '/' . $anonymizedFilename;
+        $anonymizedFilename = 'anonymousimage_'.Str::random(12).'.png';
+        $storagePath = 'uploads/'.$user->id.'/'.$anonymizedFilename;
 
         // 3. Upload to Supabase Storage
         Storage::disk('s3')->put(
@@ -113,7 +112,7 @@ class PredictionController extends Controller
                 $fileContents,
                 $anonymizedFilename,
                 ['Content-Type' => 'image/png']
-            )->post(config('services.fastapi.url') . '/predict');
+            )->post(config('services.fastapi.url').'/predict');
         } catch (\Throwable $e) {
             Log::error('Model service unreachable', [
                 'image_id' => $image->id,
@@ -159,12 +158,12 @@ class PredictionController extends Controller
             $image->update(['validation_status' => 'rejected_not_fundus']);
             AuditLog::record('rejected_not_fundus', $image->id, 'image');
 
-              return response()->json([
+            return response()->json([
                 'detail' => 'This does not appear to be a color fundus photograph. '
-                    . 'No prediction was recorded.',
+                    .'No prediction was recorded.',
                 'signature_score' => $data['fundus_signature_score'] ?? null,
             ], 422);
-  }
+        }
 
         // 6. Refuse to store an incomplete result.
         //    Defaulting a missing grade to "No DR" or a missing flag to
@@ -188,19 +187,19 @@ class PredictionController extends Controller
             return response()->json([
                 'detail' => 'Model returned an incomplete result. No prediction was saved.',
             ], 502);
-    }
+        }
 
         $prediction = Prediction::create([
             'image_id' => $image->id,
             'predicted_class' => self::STAGE_INDEX[$label],
             'confidence_score' => $data['confidence'],
             'probabilities' => $data['class_probabilities'],
-             'referral_flag' => $data['referable'],
+            'referral_flag' => $data['referable'],
             'referable_probability' => $data['referable_probability'],
-  'flagged_for_review' => $data['flagged_for_review'] ?? false,
+            'flagged_for_review' => $data['flagged_for_review'] ?? false,
             'atypical_fundus_image' => $data['atypical_fundus_image'] ?? false,
             'fundus_signature_score' => $data['fundus_signature_score'] ?? null,
-                      
+
             'gradcam_path' => null,
             'model_version' => 'efficientnet-b4-512-coral',
         ]);
@@ -256,11 +255,9 @@ class PredictionController extends Controller
             ->paginate(20);
 
         return view('history', ['images' => $images]);
-        }
-       
-        
+    }
 
-     public function show(Request $request, Prediction $prediction)
+    public function show(Request $request, Prediction $prediction)
     {
         $user = $request->user();
 
@@ -292,6 +289,12 @@ class PredictionController extends Controller
             403
         );
 
+        abort_if(
+            $image->retention_purged_at !== null
+                || $image->storage_path === null,
+            404
+        );
+
         $disk = Storage::disk('s3');
 
         abort_unless($disk->exists($image->storage_path), 404);
@@ -299,10 +302,11 @@ class PredictionController extends Controller
         return response($disk->get($image->storage_path), 200, [
             'Content-Type' => $disk->mimeType($image->storage_path) ?: 'image/jpeg',
             'Cache-Control' => 'private, max-age=300',
-        ]);     
+        ]);
 
- }
-public function welcome()
+    }
+
+    public function welcome()
     {
         return view('welcome');
     }
