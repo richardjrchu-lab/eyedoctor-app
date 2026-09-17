@@ -20,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $clientIpResolver = app(ClientIpResolver::class);
 
+        RateLimiter::for(
+            'retention-trigger',
+            fn () => Limit::perMinute(3)
+                ->by('retention-trigger-global')
+        );
+
         /*
          * Dedicated access-request rate limiters.
          *
@@ -28,66 +34,59 @@ class AppServiceProvider extends ServiceProvider
          */
         RateLimiter::for(
             'access-request-view',
-            fn (Request $request) =>
-                Limit::perMinute(30)
-                    ->by($clientIpResolver->resolve($request))
+            fn (Request $request) => Limit::perMinute(30)
+                ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'access-request-submit',
-            fn (Request $request) =>
-                Limit::perHour(5)
-                    ->by($clientIpResolver->resolve($request))
+            fn (Request $request) => Limit::perHour(5)
+                ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'access-request-resend',
-            fn (Request $request) =>
-                Limit::perHour(3)
-                    ->by($clientIpResolver->resolve($request))
+            fn (Request $request) => Limit::perHour(3)
+                ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'access-request-verify',
-            fn (Request $request) =>
-                Limit::perMinute(6)
-                    ->by($clientIpResolver->resolve($request))
+            fn (Request $request) => Limit::perMinute(6)
+                ->by($clientIpResolver->resolve($request))
         );
 
         RateLimiter::for(
             'admin-access-request-proof',
-            fn (Request $request) =>
-                Limit::perMinute(30)
-                    ->by(
-                        (string) (
-                            $request->user()?->getAuthIdentifier()
-                            ?? $request->ip()
-                        )
+            fn (Request $request) => Limit::perMinute(30)
+                ->by(
+                    (string) (
+                        $request->user()?->getAuthIdentifier()
+                        ?? $request->ip()
                     )
+                )
         );
 
         RateLimiter::for(
             'admin-access-request-decision',
-            fn (Request $request) =>
-                Limit::perMinute(10)
-                    ->by(
-                        (string) (
-                            $request->user()?->getAuthIdentifier()
-                            ?? $request->ip()
-                        )
+            fn (Request $request) => Limit::perMinute(10)
+                ->by(
+                    (string) (
+                        $request->user()?->getAuthIdentifier()
+                        ?? $request->ip()
                     )
+                )
         );
 
         RateLimiter::for(
             'admin-access-request-setup-resend',
-            fn (Request $request) =>
-                Limit::perHour(3)
-                    ->by(
-                        (string) (
-                            $request->user()?->getAuthIdentifier()
-                            ?? $request->ip()
-                        )
+            fn (Request $request) => Limit::perHour(3)
+                ->by(
+                    (string) (
+                        $request->user()?->getAuthIdentifier()
+                        ?? $request->ip()
                     )
+                )
         );
 
         /*

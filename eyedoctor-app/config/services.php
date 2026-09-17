@@ -34,7 +34,12 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
- 'fastapi' => [
+    'fastapi' => [
         'url' => env('FASTAPI_URL', 'http://localhost:8080'),
+    ],
+    'retention' => [
+        'trigger_secret' => env(
+            'RETENTION_TRIGGER_SECRET'
+        ),
     ],
 ];

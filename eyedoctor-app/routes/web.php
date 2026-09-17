@@ -5,8 +5,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MobileAppController;
 use App\Http\Controllers\PredictionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RetentionTriggerController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -34,7 +35,6 @@ Route::middleware([
         [DashboardController::class, 'index']
     )->name('welcome');
 
-
     /*
     |--------------------------------------------------------------------------
     | Screening Workspace
@@ -46,7 +46,6 @@ Route::middleware([
         [PredictionController::class, 'welcome']
     )->name('screening');
 
-
     Route::post(
         '/predict',
         [PredictionController::class, 'predict']
@@ -54,14 +53,12 @@ Route::middleware([
         ->middleware('throttle:20,1')
         ->name('predict');
 
-
     Route::post(
         '/predictions/{prediction}/correct',
         [PredictionController::class, 'correct']
     )->name('predictions.correct');
 
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -86,12 +83,10 @@ Route::middleware([
             [AdminAccessRequestController::class, 'index']
         )->name('access-requests.index');
 
-
         Route::get(
             '/access-requests/{accessRequest:public_id}',
             [AdminAccessRequestController::class, 'show']
         )->name('access-requests.show');
-
 
         Route::get(
             '/access-requests/{accessRequest:public_id}/proof',
@@ -100,14 +95,12 @@ Route::middleware([
             ->middleware('throttle:admin-access-request-proof')
             ->name('access-requests.proof');
 
-
         Route::post(
             '/access-requests/{accessRequest:public_id}/approve',
             [AdminAccessRequestController::class, 'approve']
         )
             ->middleware('throttle:admin-access-request-decision')
             ->name('access-requests.approve');
-
 
         Route::post(
             '/access-requests/{accessRequest:public_id}/reject',
@@ -116,7 +109,6 @@ Route::middleware([
             ->middleware('throttle:admin-access-request-decision')
             ->name('access-requests.reject');
 
-
         Route::post(
             '/access-requests/{accessRequest:public_id}/resend-setup',
             [AdminAccessRequestController::class, 'resendSetup']
@@ -124,9 +116,7 @@ Route::middleware([
             ->middleware('throttle:admin-access-request-setup-resend')
             ->name('access-requests.resend-setup');
 
-
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -157,18 +147,15 @@ Route::middleware([
         [PredictionController::class, 'history']
     )->name('history');
 
-
     Route::get(
         '/predictions/{prediction}',
         [PredictionController::class, 'show']
     )->name('predictions.show');
 
-
     Route::get(
         '/images/{image}/file',
         [PredictionController::class, 'imageFile']
     )->name('images.file');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -181,7 +168,6 @@ Route::middleware([
         [MobileAppController::class, 'index']
     )->name('mobile-app');
 
-
     Route::get(
         '/mobile-app/download',
         [MobileAppController::class, 'download']
@@ -190,7 +176,6 @@ Route::middleware([
         ->name('mobile-app.download');
 
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -205,12 +190,10 @@ Route::middleware('auth')->group(function () {
         [ProfileController::class, 'edit']
     )->name('profile.edit');
 
-
     Route::patch(
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
-
 
     Route::delete(
         '/profile',
@@ -220,3 +203,22 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+/*
+|--------------------------------------------------------------------------
+| Internal Image Retention Trigger
+|--------------------------------------------------------------------------
+|
+| Machine-to-machine endpoint used only by the production retention
+| scheduler. Authentication is performed by RetentionTriggerController
+| using the dedicated retention secret.
+|
+*/
+Route::post(
+    '/internal/retention/purge',
+    RetentionTriggerController::class
+)
+    ->withoutMiddleware([
+        ValidateCsrfToken::class,
+    ])
+    ->middleware('throttle:retention-trigger')
+    ->name('internal.retention.purge');
