@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prediction #{{ $prediction->id }} — DR Detection System</title>
+    <title>Prediction #{{ $prediction->id }} â€” DR Detection System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-800 text-slate-100 min-h-screen font-mono">
@@ -39,9 +39,23 @@ $referralProb = $prediction->referable_probability;
     {{-- Image --}}
     <section class="bg-slate-900 border border-slate-700 rounded p-4">
         <p class="text-xs uppercase tracking-widest text-slate-400 mb-3">Fundus Image</p>
-        <img src="{{ route('images.file', $image) }}"
-             alt="Anonymized fundus image"
-             class="w-full rounded border border-slate-700 bg-black">
+        @if ($image->retention_purged_at)
+            <div
+                class="rounded border border-slate-700 bg-slate-800/60 p-6 text-center"
+            >
+                <p class="text-sm font-medium text-slate-200">
+                    Source retinal image removed under the one-year retention policy.
+                </p>
+
+                <p class="mt-2 text-xs leading-relaxed text-slate-400">
+                    The screening record and prediction results are retained.
+                </p>
+            </div>
+        @else
+            <img src="{{ route('images.file', $image) }}"
+                 alt="Anonymized fundus image"
+                 class="w-full rounded border border-slate-700 bg-black">
+        @endif
         <dl class="mt-4 text-xs space-y-1 text-slate-400">
             <div class="flex justify-between">
                 <dt>Anonymized filename</dt>
@@ -120,7 +134,7 @@ $referralProb = $prediction->referable_probability;
             <p class="text-xs uppercase tracking-widest text-slate-400 mb-3">Class probability distribution</p>
  @foreach ($probs as $row)
                 @php
-                    $label = $row['label'] ?? '—';
+                    $label = $row['label'] ?? 'â€”';
                     $value = (float) ($row['probability'] ?? 0);
                 @endphp
                 <div class="mb-2">
@@ -134,7 +148,7 @@ $referralProb = $prediction->referable_probability;
                 </div>
             @endforeach
             <p class="text-[10px] text-slate-500 mt-3 leading-relaxed">
-                Mild NPDR precision is limited (~47%) — when the grade reads "Mild", it is often
+                Mild NPDR precision is limited (~47%) â€” when the grade reads "Mild", it is often
                 actually Moderate. The referral decision is unaffected by this boundary; the grade
                 itself is least reliable here.
             </p>

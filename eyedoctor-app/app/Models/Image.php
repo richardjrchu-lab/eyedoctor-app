@@ -15,7 +15,15 @@ class Image extends Model
         'storage_path',
         'anonymized_filename',
         'validation_status',
+        'retention_purged_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'retention_purged_at' => 'datetime',
+        ];
+    }
 
     public function user()
     {

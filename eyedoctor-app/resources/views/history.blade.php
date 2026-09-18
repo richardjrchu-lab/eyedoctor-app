@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Prediction History — RETINA</title>
+    <title>Prediction History â€” RETINA</title>
 
     @vite([
         'resources/css/app.css',
@@ -85,7 +85,7 @@
                                uppercase tracking-wider
                                text-amber-300"
                     >
-                        Administrator View — All Doctors
+                        Administrator View â€” All Doctors
                     </div>
 
                 @endrole
@@ -162,6 +162,21 @@
                                 >
                                     {{ $image->created_at->format('M d, Y g:i A') }}
                                 </span>
+
+                                @if ($image->retention_purged_at)
+                                    <span
+                                        class="mt-2 inline-flex
+                                               rounded-full
+                                               border border-[#475569]
+                                               bg-[#1e293b]
+                                               px-2.5 py-1
+                                               text-[10px] font-semibold
+                                               uppercase tracking-wide
+                                               text-[#94a3b8]"
+                                    >
+                                        Source image removed
+                                    </span>
+                                @endif
 
 
                                 @role('admin')
@@ -315,6 +330,21 @@
                                     {{ $image->created_at->format('M d, Y g:i A') }}
                                 </span>
 
+                                @if ($image->retention_purged_at)
+                                    <span
+                                        class="mt-2 inline-flex
+                                               rounded-full
+                                               border border-[#475569]
+                                               bg-[#1e293b]
+                                               px-2.5 py-1
+                                               text-[10px] font-semibold
+                                               uppercase tracking-wide
+                                               text-[#94a3b8]"
+                                    >
+                                        Source image removed
+                                    </span>
+                                @endif
+
 
                                 @role('admin')
 
@@ -392,7 +422,7 @@
                                                text-xs
                                                text-[#64748b]"
                                     >
-                                        Model service error — no classification recorded
+                                        Model service error â€” no classification recorded
                                     </span>
 
 
