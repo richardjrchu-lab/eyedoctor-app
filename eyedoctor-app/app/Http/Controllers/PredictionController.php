@@ -62,6 +62,23 @@ class PredictionController extends Controller
         $file = $request->file('file');
         $user = $request->user();
 
+        // During the formal evaluation, each clinician may record only one
+        // successful prediction for each frozen study case. Failed/rejected
+        // attempts remain retryable because they have no Prediction record.
+        if ($studyCaseId !== null) {
+            $alreadyCompleted = Image::query()
+                ->where('user_id', $user->id)
+                ->where('study_case_id', $studyCaseId)
+                ->whereHas('prediction')
+                ->exists();
+
+            if ($alreadyCompleted) {
+                return response()->json([
+                    'detail' => 'This study case has already been completed by this clinician.',
+                ], 409);
+            }
+        }
+
         // 2. Read the temporary upload, sanitize it entirely in memory,
         //    and immediately discard our reference to the original bytes.
         //    Only the newly encoded PNG may reach persistent storage or
