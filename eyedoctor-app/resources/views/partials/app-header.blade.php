@@ -173,6 +173,23 @@
                 >
                     Screening
                 </a>
+{{-- FORMAL EVALUATION --}}
+                <a
+                    href="{{ route('evaluation') }}"
+                    class="
+                        rounded-lg border
+                        px-4 py-2
+                        text-sm font-semibold
+                        transition
+
+                        {{ request()->routeIs('evaluation')
+                            ? 'border-[#2dd4bf] bg-[#134e4a]/40 text-[#5eead4]'
+                            : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
+                        }}
+                    "
+                >
+                    Evaluation
+                </a>
 
             @endrole
 

@@ -1,3 +1,6 @@
+@php
+    $evaluationMode = $evaluationMode ?? false;
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 
@@ -10,7 +13,10 @@
     >
 
     <title>
-        Diabetic Retinopathy Detection System
+        {{ $evaluationMode
+            ? 'RETINA Formal Evaluation'
+            : 'Diabetic Retinopathy Detection System'
+        }}
     </title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -723,10 +729,10 @@
                                font-mono
                                mt-2 leading-relaxed"
                     >
-                        Mild NPDR precision is limited (~55%) &mdash;
-                        when the grade reads "Mild", it is often actually
-                        Moderate. The referral decision above is unaffected
-                        by this boundary; the grade itself is least reliable here.
+                        Mild NPDR precision on the locked test set was
+                        approximately 55%. Interpret Mild-class predictions
+                        together with the probability distribution, referral
+                        result, and clinical assessment.by this boundary; the grade itself is least reliable here.
                     </p>
 
                 </div>
@@ -1068,7 +1074,18 @@
         // CONFIG
         // ================================================================
 
-        const API_ENDPOINT = "{{ route('predict') }}";
+        const EVALUATION_MODE =
+            @json($evaluationMode);
+
+
+        const API_ENDPOINT =
+            EVALUATION_MODE
+                ? "{{ route('evaluation.predict') }}"
+                : "{{ route('predict') }}";
+
+
+        const STUDY_CASE_PATTERN =
+            /^RETINA-EVAL-(00[1-9]|01[0-9]|020)$/;
 
 
         const stagesList = [
@@ -1127,6 +1144,159 @@
         let activeImage = new Image();
 
         let currentPredictionId = null;
+
+
+        // ================================================================
+        // FORMAL EVALUATION MODE
+        // ================================================================
+
+        function handleStudyCaseInput(input) {
+
+            input.value =
+                input.value
+                    .toUpperCase()
+                    .replace(/\s+/g, '');
+
+
+            syncEvaluationUploadState();
+
+        }
+
+
+
+        function syncEvaluationUploadState() {
+
+            if (!EVALUATION_MODE) {
+                return;
+            }
+
+
+            const studyCaseInput =
+                document.getElementById(
+                    'study_case_id'
+                );
+
+
+            const status =
+                document.getElementById(
+                    'study-case-status'
+                );
+
+
+            const fileInput =
+                document.getElementById(
+                    'eye_photo'
+                );
+
+
+            const uploadBox =
+                document.getElementById(
+                    'upload-box'
+                );
+
+
+            const instruction =
+                document.getElementById(
+                    'upload-instruction'
+                );
+
+
+            const studyCaseId =
+                studyCaseInput.value
+                    .trim()
+                    .toUpperCase();
+
+
+            const valid =
+                STUDY_CASE_PATTERN.test(
+                    studyCaseId
+                );
+
+
+            fileInput.disabled =
+                !valid;
+
+
+            if (valid) {
+
+                status.innerText =
+                    `${studyCaseId} ready. Select the assigned image.`;
+
+
+                status.className =
+                    "mt-2 text-[10px] font-mono text-emerald-400";
+
+
+                fileInput.classList.remove(
+                    'cursor-not-allowed'
+                );
+
+
+                fileInput.classList.add(
+                    'cursor-pointer'
+                );
+
+
+                uploadBox.classList.remove(
+                    'opacity-60',
+                    'cursor-not-allowed'
+                );
+
+
+                uploadBox.classList.add(
+                    'cursor-pointer',
+                    'hover:border-slate-400'
+                );
+
+
+                instruction.innerText =
+                    "JPEG / PNG Color Fundus Photographs";
+
+            } else {
+
+                status.innerText =
+                    "Enter RETINA-EVAL-001 through RETINA-EVAL-020 to unlock image upload.";
+
+
+                status.className =
+                    "mt-2 text-[10px] font-mono text-amber-400";
+
+
+                fileInput.classList.remove(
+                    'cursor-pointer'
+                );
+
+
+                fileInput.classList.add(
+                    'cursor-not-allowed'
+                );
+
+
+                uploadBox.classList.remove(
+                    'cursor-pointer',
+                    'hover:border-slate-400'
+                );
+
+
+                uploadBox.classList.add(
+                    'opacity-60',
+                    'cursor-not-allowed'
+                );
+
+
+                instruction.innerText =
+                    "Enter a valid Study Case ID to unlock image upload.";
+
+            }
+
+        }
+
+
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            syncEvaluationUploadState
+        );
 
 
         // ================================================================
@@ -1401,6 +1571,46 @@
             }
 
 
+            const studyCaseInput =
+                document.getElementById(
+                    'study_case_id'
+                );
+
+
+            const studyCaseId =
+                studyCaseInput
+                    ? studyCaseInput.value
+                        .trim()
+                        .toUpperCase()
+                    : '';
+
+
+            if (
+                EVALUATION_MODE
+                && !STUDY_CASE_PATTERN.test(
+                    studyCaseId
+                )
+            ) {
+
+                input.value = '';
+
+                syncEvaluationUploadState();
+
+                return;
+
+            }
+
+
+            if (
+                EVALUATION_MODE
+                && studyCaseInput
+            ) {
+
+                studyCaseInput.readOnly =
+                    true;
+
+            }
+
             const file =
                 input.files[0];
 
@@ -1461,12 +1671,6 @@
                 file
             );
 
-            const studyCaseId =
-                document
-                    .getElementById('study_case_id')
-                    .value
-                    .trim();
-
             if (studyCaseId !== '') {
                 formData.append(
                     'study_case_id',
@@ -1483,6 +1687,8 @@
 
                     headers: {
 
+                        'Accept':
+                            'application/json',
                         'X-CSRF-TOKEN':
                             document
                                 .querySelector(
@@ -1506,7 +1712,8 @@
                 if (!res.ok) {
 
                     throw new Error(
-                        data.detail
+
+                        || data.messagedata.detail
                         || `Server returned ${res.status}`
                     );
 

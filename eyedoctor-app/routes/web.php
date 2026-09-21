@@ -46,12 +46,30 @@ Route::middleware([
         [PredictionController::class, 'welcome']
     )->name('screening');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Formal Evaluation Workspace
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/evaluation',
+        [PredictionController::class, 'evaluation']
+    )->name('evaluation');
+
     Route::post(
         '/predict',
         [PredictionController::class, 'predict']
     )
         ->middleware('throttle:20,1')
         ->name('predict');
+
+    Route::post(
+        '/evaluation/predict',
+        [PredictionController::class, 'predictEvaluation']
+    )
+        ->middleware('throttle:20,1')
+        ->name('evaluation.predict');
 
     Route::post(
         '/predictions/{prediction}/correct',
@@ -203,6 +221,7 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
 /*
 |--------------------------------------------------------------------------
 | Internal Image Retention Trigger
@@ -213,6 +232,7 @@ require __DIR__.'/auth.php';
 | using the dedicated retention secret.
 |
 */
+
 Route::post(
     '/internal/retention/purge',
     RetentionTriggerController::class

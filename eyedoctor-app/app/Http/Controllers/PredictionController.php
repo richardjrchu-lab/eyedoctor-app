@@ -26,10 +26,30 @@ class PredictionController extends Controller
         'PDR' => 4,
     ];
 
+    public function predictEvaluation(
+        Request $request,
+        ImageSanitizer $imageSanitizer
+    ) {
+        $request->attributes->set(
+            'evaluation_mode',
+            true
+        );
+
+        return $this->predict(
+            $request,
+            $imageSanitizer
+        );
+    }
+
     public function predict(
         Request $request,
         ImageSanitizer $imageSanitizer
     ) {
+        $evaluationMode = (bool) $request->attributes->get(
+            'evaluation_mode',
+            false
+        );
+
         // 1. Normalize the optional research case ID before validation.
         //    Ordinary clinical screening leaves this value null.
         $studyCaseId = $request->input('study_case_id');
@@ -52,7 +72,7 @@ class PredictionController extends Controller
         $request->validate([
             'file' => 'required|image|mimes:jpeg,png|max:10240', // 10MB max
             'study_case_id' => [
-                'nullable',
+                $evaluationMode ? 'required' : 'nullable',
                 'string',
                 'max:64',
                 'regex:/^RETINA-EVAL-(00[1-9]|01[0-9]|020)$/',
@@ -135,7 +155,10 @@ class PredictionController extends Controller
                 'image_id' => $image->id,
                 'error' => $e->getMessage(),
             ]);
-            $image->update(['validation_status' => 'error']);
+
+            $image->update([
+                'validation_status' => 'error',
+            ]);
 
             return response()->json([
                 'detail' => 'Model server unreachable. Please try again.',
@@ -154,11 +177,14 @@ class PredictionController extends Controller
             ]);
 
             $image->update([
-                'validation_status' => $isRejection ? 'rejected_not_fundus' : 'error',
+                'validation_status' => $isRejection
+                    ? 'rejected_not_fundus'
+                    : 'error',
             ]);
 
             return response()->json([
-                'detail' => $response->json('detail') ?? 'Model server error.',
+                'detail' => $response->json('detail')
+                    ?? 'Model server error.',
             ], $response->status());
         }
 
@@ -172,13 +198,21 @@ class PredictionController extends Controller
         // rejection, not an approval. If the model service ever stops sending
         // it, uploads break loudly rather than silently grading junk.
         if (($data['is_valid_fundus_image'] ?? null) !== true) {
-            $image->update(['validation_status' => 'rejected_not_fundus']);
-            AuditLog::record('rejected_not_fundus', $image->id, 'image');
+            $image->update([
+                'validation_status' => 'rejected_not_fundus',
+            ]);
+
+            AuditLog::record(
+                'rejected_not_fundus',
+                $image->id,
+                'image'
+            );
 
             return response()->json([
                 'detail' => 'This does not appear to be a color fundus photograph. '
                     .'No prediction was recorded.',
-                'signature_score' => $data['fundus_signature_score'] ?? null,
+                'signature_score' => $data['fundus_signature_score']
+                    ?? null,
             ], 422);
         }
 
@@ -190,16 +224,19 @@ class PredictionController extends Controller
 
         $isComplete = isset(self::STAGE_INDEX[$label])
             && isset($data['confidence'])
- && isset($data['referable'])
+            && isset($data['referable'])
             && isset($data['referable_probability'])
-                        && ! empty($data['class_probabilities']);
+            && ! empty($data['class_probabilities']);
 
         if (! $isComplete) {
             Log::error('Model returned an incomplete result', [
                 'image_id' => $image->id,
                 'keys' => array_keys($data ?? []),
             ]);
-            $image->update(['validation_status' => 'error']);
+
+            $image->update([
+                'validation_status' => 'error',
+            ]);
 
             return response()->json([
                 'detail' => 'Model returned an incomplete result. No prediction was saved.',
@@ -221,7 +258,11 @@ class PredictionController extends Controller
             'model_version' => 'efficientnet-b4-512-coral',
         ]);
 
-        AuditLog::record('prediction_created', $prediction->id, 'prediction');
+        AuditLog::record(
+            'prediction_created',
+            $prediction->id,
+            'prediction'
+        );
 
         // 7. Same shape the frontend already expects, plus our DB prediction ID
         $data['prediction_id'] = $prediction->id;
@@ -229,8 +270,10 @@ class PredictionController extends Controller
         return response()->json($data);
     }
 
-    public function correct(Request $request, Prediction $prediction)
-    {
+    public function correct(
+        Request $request,
+        Prediction $prediction
+    ) {
         // A doctor may only correct a prediction on an image they can see.
         // Reuses scopeVisibleTo so this stays the single access-control layer.
         $canAccess = Image::whereKey($prediction->image_id)
@@ -238,7 +281,11 @@ class PredictionController extends Controller
             ->exists();
 
         if (! $canAccess) {
-            AuditLog::record('denied_correction', $prediction->id, 'prediction');
+            AuditLog::record(
+                'denied_correction',
+                $prediction->id,
+                'prediction'
+            );
 
             return response()->json([
                 'detail' => 'You do not have access to this prediction.',
@@ -251,7 +298,9 @@ class PredictionController extends Controller
         ]);
 
         $correction = Correction::updateOrCreate(
-            ['prediction_id' => $prediction->id],
+            [
+                'prediction_id' => $prediction->id,
+            ],
             [
                 'corrected_by' => $request->user()->id,
                 'corrected_class' => $request->corrected_class,
@@ -259,23 +308,37 @@ class PredictionController extends Controller
             ]
         );
 
-        AuditLog::record('corrected_prediction', $correction->id, 'correction');
+        AuditLog::record(
+            'corrected_prediction',
+            $correction->id,
+            'correction'
+        );
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+        ]);
     }
 
-    public function history(Request $request)
-    {
+    public function history(
+        Request $request
+    ) {
         $images = Image::with('prediction.correction')
             ->visibleTo($request->user())
             ->latest()
             ->paginate(20);
 
-        return view('history', ['images' => $images]);
+        return view(
+            'history',
+            [
+                'images' => $images,
+            ]
+        );
     }
 
-    public function show(Request $request, Prediction $prediction)
-    {
+    public function show(
+        Request $request,
+        Prediction $prediction
+    ) {
         $user = $request->user();
 
         $image = Image::whereKey($prediction->image_id)
@@ -284,25 +347,43 @@ class PredictionController extends Controller
             ->first();
 
         if (! $image) {
-            AuditLog::record('denied_view', $prediction->id, 'prediction');
+            AuditLog::record(
+                'denied_view',
+                $prediction->id,
+                'prediction'
+            );
+
             abort(403);
         }
 
-        $prediction->load('correction.correctedBy');
+        $prediction->load(
+            'correction.correctedBy'
+        );
 
-        AuditLog::record('viewed_prediction', $prediction->id, 'prediction');
+        AuditLog::record(
+            'viewed_prediction',
+            $prediction->id,
+            'prediction'
+        );
 
-        return view('prediction-detail', [
-            'prediction' => $prediction,
-            'image' => $image,
-            'isAdmin' => $user->hasRole('admin'),
-        ]);
+        return view(
+            'prediction-detail',
+            [
+                'prediction' => $prediction,
+                'image' => $image,
+                'isAdmin' => $user->hasRole('admin'),
+            ]
+        );
     }
 
-    public function imageFile(Request $request, Image $image)
-    {
+    public function imageFile(
+        Request $request,
+        Image $image
+    ) {
         abort_unless(
-            Image::whereKey($image->id)->visibleTo($request->user())->exists(),
+            Image::whereKey($image->id)
+                ->visibleTo($request->user())
+                ->exists(),
             403
         );
 
@@ -314,17 +395,35 @@ class PredictionController extends Controller
 
         $disk = Storage::disk('s3');
 
-        abort_unless($disk->exists($image->storage_path), 404);
+        abort_unless(
+            $disk->exists($image->storage_path),
+            404
+        );
 
-        return response($disk->get($image->storage_path), 200, [
-            'Content-Type' => $disk->mimeType($image->storage_path) ?: 'image/jpeg',
-            'Cache-Control' => 'private, max-age=300',
-        ]);
+        return response(
+            $disk->get($image->storage_path),
+            200,
+            [
+                'Content-Type' => $disk->mimeType(
+                    $image->storage_path
+                ) ?: 'image/jpeg',
 
+                'Cache-Control' => 'private, max-age=300',
+            ]
+        );
     }
 
     public function welcome()
     {
-        return view('welcome');
+        return view('welcome', [
+            'evaluationMode' => false,
+        ]);
+    }
+
+    public function evaluation()
+    {
+        return view('welcome', [
+            'evaluationMode' => true,
+        ]);
     }
 }

@@ -166,9 +166,9 @@ $referralThreshold = 0.49;
                 </div>
             @endforeach
             <p class="text-[10px] text-slate-500 mt-3 leading-relaxed">
-                Mild NPDR precision is limited (~55%) â€” when the grade reads "Mild", it is often
-                actually Moderate. The referral decision is unaffected by this boundary; the grade
-                itself is least reliable here.
+                Mild NPDR precision on the locked test set was approximately 55%.
+                Interpret Mild-class predictions together with the probability distribution,
+                referral result, and clinical assessment.
             </p>
         </div>
         @endif
