@@ -723,7 +723,7 @@
                                font-mono
                                mt-2 leading-relaxed"
                     >
-                        Mild NPDR precision is limited (~47%) &mdash;
+                        Mild NPDR precision is limited (~55%) &mdash;
                         when the grade reads "Mild", it is often actually
                         Moderate. The referral decision above is unaffected
                         by this boundary; the grade itself is least reliable here.

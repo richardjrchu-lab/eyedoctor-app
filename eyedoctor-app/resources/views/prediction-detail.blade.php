@@ -25,6 +25,7 @@
     ];
     $probs = $prediction->probabilities ?? [];
 $referralProb = $prediction->referable_probability;
+$referralThreshold = 0.49;
 @endphp
 
 <header class="bg-slate-900 border-b border-slate-700 p-5 text-center">
@@ -108,15 +109,32 @@ $referralProb = $prediction->referable_probability;
 
         {{-- Threshold scale --}}
         <div class="bg-slate-900 border border-slate-700 rounded p-4">
-            <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Referral probability</p>
+            <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">
+                Referral probability
+            </p>
+
             <div class="relative h-2 bg-slate-700 rounded">
-                <div class="absolute inset-y-0 left-0 rounded {{ $prediction->referral_flag ? 'bg-red-600' : 'bg-emerald-600' }}"
- style="width: {{ min(100, max(0, ($referralProb ?? 0) * 100)) }}%"></div>
-                 <div class="absolute inset-y-0 w-px bg-slate-100" style="left: 48%"></div>
+                <div
+                    class="absolute inset-y-0 left-0 rounded {{ $prediction->referral_flag ? 'bg-red-600' : 'bg-emerald-600' }}"
+                    style="width: {{ min(100, max(0, ($referralProb ?? 0) * 100)) }}%"
+                ></div>
+
+                <div
+                    class="absolute inset-y-0 w-px bg-slate-100"
+                    style="left: {{ $referralThreshold * 100 }}%"
+                ></div>
             </div>
+
             <div class="flex justify-between text-[10px] text-slate-400 mt-1">
-  <span>{{ $referralProb === null ? 'P = not recorded' : 'P = ' . number_format($referralProb, 3) }}</span>
-                  <span>Threshold = 0.48</span>
+                <span>
+                    {{ $referralProb === null
+                        ? 'P = not recorded'
+                        : 'P = ' . number_format($referralProb, 3) }}
+                </span>
+
+                <span>
+                    Threshold = {{ number_format($referralThreshold, 2) }}
+                </span>
             </div>
         </div>
 
@@ -148,7 +166,7 @@ $referralProb = $prediction->referable_probability;
                 </div>
             @endforeach
             <p class="text-[10px] text-slate-500 mt-3 leading-relaxed">
-                Mild NPDR precision is limited (~47%) â€” when the grade reads "Mild", it is often
+                Mild NPDR precision is limited (~55%) â€” when the grade reads "Mild", it is often
                 actually Moderate. The referral decision is unaffected by this boundary; the grade
                 itself is least reliable here.
             </p>
