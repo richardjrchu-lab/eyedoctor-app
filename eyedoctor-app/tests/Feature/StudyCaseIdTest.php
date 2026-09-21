@@ -322,3 +322,102 @@ test(
         )->toBe(0);
     }
 );
+test(
+    'same clinician cannot submit the same completed study case twice',
+    function () {
+        Storage::fake('s3');
+        retinaStudyCaseFakeModel();
+
+        $doctor = retinaStudyCaseDoctor();
+
+        $this
+            ->actingAs($doctor)
+            ->post(
+                '/predict',
+                retinaStudyCasePayload(
+                    'RETINA-EVAL-001'
+                ),
+                ['Accept' => 'application/json']
+            )
+            ->assertOk();
+
+        $this
+            ->actingAs($doctor)
+            ->post(
+                '/predict',
+                retinaStudyCasePayload(
+                    'RETINA-EVAL-001'
+                ),
+                ['Accept' => 'application/json']
+            )
+            ->assertStatus(409)
+            ->assertJson([
+                'detail' =>
+                    'This study case has already been completed by this clinician.',
+            ]);
+
+        expect(
+            Image::query()
+                ->where(
+                    'study_case_id',
+                    'RETINA-EVAL-001'
+                )
+                ->count()
+        )->toBe(1);
+    }
+);
+test(
+    'formal evaluation requires a study case id',
+    function () {
+        Storage::fake('s3');
+
+        $doctor = retinaStudyCaseDoctor();
+
+        $this
+            ->actingAs($doctor)
+            ->post(
+                '/evaluation/predict',
+                retinaStudyCasePayload(),
+                ['Accept' => 'application/json']
+            )
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(
+                'study_case_id'
+            );
+
+        expect(
+            Image::query()->count()
+        )->toBe(0);
+    }
+);
+
+test(
+    'formal evaluation accepts and persists a valid study case id',
+    function () {
+        Storage::fake('s3');
+        retinaStudyCaseFakeModel();
+
+        $doctor = retinaStudyCaseDoctor();
+
+        $this
+            ->actingAs($doctor)
+            ->post(
+                '/evaluation/predict',
+                retinaStudyCasePayload(
+                    'RETINA-EVAL-002'
+                ),
+                ['Accept' => 'application/json']
+            )
+            ->assertOk();
+
+        expect(
+            Image::query()
+                ->where(
+                    'study_case_id',
+                    'RETINA-EVAL-002'
+                )
+                ->whereHas('prediction')
+                ->exists()
+        )->toBeTrue();
+    }
+);
