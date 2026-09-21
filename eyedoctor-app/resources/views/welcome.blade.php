@@ -68,6 +68,85 @@
             <div>
 
 
+                                {{-- ================================================= --}}
+                {{-- FORMAL EVALUATION CASE ID                         --}}
+                {{-- ================================================= --}}
+
+                @if ($evaluationMode)
+
+                    <div
+                        class="mb-4 rounded-lg
+                               border border-slate-700
+                               bg-slate-800/50
+                               p-4"
+                    >
+
+                        <label
+                            for="study_case_id"
+                            class="block text-[10px]
+                                   font-mono uppercase
+                                   text-slate-400 mb-1"
+                        >
+                            Study Case ID
+
+                            <span class="text-red-400">
+                                required
+                            </span>
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="study_case_id"
+                            maxlength="15"
+                            autocomplete="off"
+                            spellcheck="false"
+                            oninput="handleStudyCaseInput(this)"
+                            placeholder="RETINA-EVAL-001"
+                            class="w-full rounded-lg
+                                   border border-slate-700
+                                   bg-slate-900
+                                   px-3 py-2
+                                   text-xs font-mono
+                                   text-slate-200
+                                   placeholder:text-slate-600
+                                   focus:outline-none
+                                   focus:border-teal-400"
+                        >
+
+
+                        <p
+                            id="study-case-status"
+                            class="mt-2 text-[10px]
+                                   font-mono text-amber-400"
+                        >
+                            Enter RETINA-EVAL-001 through RETINA-EVAL-020
+                            to unlock image upload.
+                        </p>
+
+
+                        <p
+                            class="mt-2 text-[10px]
+                                   font-mono text-slate-500"
+                        >
+                            Use only the assigned research case ID.
+                            Never enter patient names or identifiers.
+                        </p>
+
+                    </div>
+
+                @else
+
+                    <input
+                        type="hidden"
+                        id="study_case_id"
+                        value=""
+                    >
+
+                @endif
+
+
+
                 {{-- ================================================= --}}
                 {{-- UPLOAD BOX                                        --}}
                 {{-- ================================================= --}}
@@ -78,12 +157,14 @@
                            border-slate-600
                            rounded-lg
                            bg-slate-800/50
-                           hover:border-slate-400
                            transition-colors
-                           cursor-pointer
                            relative min-h-[320px]
                            flex flex-col
-                           justify-center items-center"
+                           justify-center items-center
+                           {{ $evaluationMode
+                               ? 'opacity-60 cursor-not-allowed'
+                               : 'hover:border-slate-400 cursor-pointer'
+                           }}"
                 >
 
                     <input
@@ -91,10 +172,15 @@
                         id="eye_photo"
                         class="absolute inset-0
                                w-full h-full
-                               opacity-0 cursor-pointer
-                               z-10"
-                        accept="image/*"
+                               opacity-0
+                               z-10
+                               {{ $evaluationMode
+                                   ? 'cursor-not-allowed'
+                                   : 'cursor-pointer'
+                               }}"
+                        accept="image/jpeg,image/png"
                         onchange="runInference(event)"
+                        @disabled($evaluationMode)
                     >
 
 
@@ -134,61 +220,20 @@
 
 
                         <span
+                            id="upload-instruction"
                             class="text-[11px]
                                    text-slate-500
                                    mt-1 block"
                         >
-                            JPEG / PNG Color Fundus Photographs
+                            {{ $evaluationMode
+                                ? 'Enter a valid Study Case ID to unlock image upload.'
+                                : 'JPEG / PNG Color Fundus Photographs'
+                            }}
                         </span>
 
                     </div>
 
                 </div>
-
-                <div class="mt-3">
-                    <label
-                        for="study_case_id"
-                        class="block text-[10px]
-                               font-mono uppercase
-                               text-slate-400 mb-1"
-                    >
-                        Study Case ID
-                        <span class="text-slate-600">
-                            (optional)
-                        </span>
-                    </label>
-
-                    <input
-                        type="text"
-                        id="study_case_id"
-                        maxlength="64"
-                        autocomplete="off"
-                        spellcheck="false"
-                        oninput="this.value = this.value.toUpperCase()"
-                        placeholder="e.g. RETINA-EVAL-001"
-                        class="w-full rounded-lg
-                               border border-slate-700
-                               bg-slate-900
-                               px-3 py-2
-                               text-xs font-mono
-                               text-slate-200
-                               placeholder:text-slate-600
-                               focus:outline-none
-                               focus:border-teal-400"
-                    >
-
-                    <p
-                        class="mt-1 text-[10px]
-                               font-mono text-slate-500"
-                    >
-                        Formal evaluation only:
-                        RETINA-EVAL-001 to RETINA-EVAL-020.
-                        Never enter patient names or identifiers.
-                    </p>
-                </div>
-
-
-
                 {{-- ================================================= --}}
                 {{-- IMAGE PREVIEW / WORKSPACE                         --}}
                 {{-- ================================================= --}}
@@ -732,7 +777,7 @@
                         Mild NPDR precision on the locked test set was
                         approximately 55%. Interpret Mild-class predictions
                         together with the probability distribution, referral
-                        result, and clinical assessment.by this boundary; the grade itself is least reliable here.
+                        result, and clinical assessment.
                     </p>
 
                 </div>
@@ -1711,9 +1756,9 @@
 
                 if (!res.ok) {
 
-                    throw new Error(
-
-                        || data.messagedata.detail
+                 throw new Error(
+                        data.detail
+                        || data.message
                         || `Server returned ${res.status}`
                     );
 
