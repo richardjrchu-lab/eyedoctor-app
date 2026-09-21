@@ -369,7 +369,7 @@
                                            font-semibold
                                            text-[#cbd5e1]"
                                 >
-                                    0.48
+                                    0.49
                                 </span>
                             </div>
 
