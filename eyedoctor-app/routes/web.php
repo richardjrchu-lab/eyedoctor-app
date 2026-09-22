@@ -11,6 +11,22 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
+| Public RETINA Information
+|--------------------------------------------------------------------------
+|
+| Public, non-clinical information intended for search discovery.
+| No patient data, predictions, study cases, or authenticated records
+| are exposed through this route.
+|
+*/
+
+Route::view(
+    '/about',
+    'public.about'
+)->name('public.about');
+
+/*
+|--------------------------------------------------------------------------
 | Doctor Workspace
 |--------------------------------------------------------------------------
 |
