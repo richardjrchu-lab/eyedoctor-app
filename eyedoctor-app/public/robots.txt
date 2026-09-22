@@ -1,2 +1,15 @@
 User-agent: *
-Disallow:
+Allow: /about
+
+Disallow: /admin/
+Disallow: /screening
+Disallow: /predict
+Disallow: /evaluation
+Disallow: /history
+Disallow: /predictions/
+Disallow: /images/
+Disallow: /mobile-app
+Disallow: /profile
+Disallow: /internal/
+
+Sitemap: https://eyedoctor-app.onrender.com/sitemap.xml
