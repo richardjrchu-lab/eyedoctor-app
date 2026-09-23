@@ -36,6 +36,7 @@ return [
     ],
     'fastapi' => [
         'url' => env('FASTAPI_URL', 'http://localhost:8080'),
+        'api_key' => env('RETINA_API_KEY'),
     ],
     'retention' => [
         'trigger_secret' => env(

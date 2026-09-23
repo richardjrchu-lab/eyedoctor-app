@@ -82,6 +82,18 @@ class PredictionController extends Controller
         $file = $request->file('file');
         $user = $request->user();
 
+        $modelApiKey = config('services.fastapi.api_key');
+
+        if (! is_string($modelApiKey) || trim($modelApiKey) === '') {
+            Log::critical(
+                'RETINA model API key is not configured'
+            );
+
+            return response()->json([
+                'detail' => 'Model service authentication is not configured.',
+            ], 503);
+        }
+
         // During the formal evaluation, each clinician may record only one
         // successful prediction for each frozen study case. Failed/rejected
         // attempts remain retryable because they have no Prediction record.
@@ -144,7 +156,9 @@ class PredictionController extends Controller
         //    45s leaves room for Guzzle to time out cleanly before PHP's own
         //    max_execution_time turns it into an unhandled fatal.
         try {
-            $response = Http::timeout(45)->attach(
+            $response = Http::withHeaders([
+                'X-API-Key' => $modelApiKey,
+            ])->timeout(45)->attach(
                 'file',
                 $fileContents,
                 $anonymizedFilename,
