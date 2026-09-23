@@ -80,6 +80,7 @@ test(
 
         config([
             'services.fastapi.url' => 'https://retina-model.test',
+            'services.fastapi.api_key' => 'test-retina-api-key',
         ]);
 
         Http::fake([
@@ -157,6 +158,10 @@ test(
                 return
                     $request->url()
                         === 'https://retina-model.test/predict'
+                    && $request->hasHeader(
+                        'X-API-Key',
+                        'test-retina-api-key'
+                    )
                     && str_contains(
                         $body,
                         $image->anonymized_filename
