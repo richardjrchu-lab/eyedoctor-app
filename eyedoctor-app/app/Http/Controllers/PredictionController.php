@@ -268,6 +268,11 @@ class PredictionController extends Controller
             'atypical_fundus_image' => $data['atypical_fundus_image'] ?? false,
             'fundus_signature_score' => $data['fundus_signature_score'] ?? null,
 
+            'master12_score' => $data['master12_score'] ?? null,
+            'master12_threshold' => $data['master12_threshold'] ?? null,
+            'dr_scope_passed' => $data['dr_scope_passed'] ?? null,
+            'scope_warning' => $data['scope_warning'] ?? null,
+
             'gradcam_path' => null,
             'model_version' => 'efficientnet-b4-512-coral',
         ]);

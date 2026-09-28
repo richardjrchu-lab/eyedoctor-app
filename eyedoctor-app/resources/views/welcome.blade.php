@@ -740,6 +740,109 @@
                 </div>
 
 
+                {{-- ================================================= --}}
+                {{-- DR SCOPE CHECK - MASTER 12 WARNING                --}}
+                {{-- ================================================= --}}
+
+                <div
+                    id="scope-warning"
+                    class="hidden mb-4 p-4
+                           bg-orange-950/40
+                           rounded-lg
+                           border-2 border-orange-700/70"
+                >
+
+                    <div class="flex items-start gap-3">
+
+                        <span
+                            class="text-orange-400
+                                   text-lg leading-none
+                                   mt-0.5"
+                        >
+                            &#9888;
+                        </span>
+
+                        <div class="flex-1">
+
+                            <span
+                                class="text-[11px]
+                                       font-mono
+                                       text-orange-300
+                                       uppercase font-bold
+                                       block mb-2"
+                            >
+                                DR Scope Check — Additional Caution Recommended
+                            </span>
+
+                            <p
+                                id="scope-warning-text"
+                                class="text-[11px]
+                                       text-orange-100/90
+                                       leading-relaxed"
+                            >
+                            </p>
+
+                            <div
+                                class="mt-3 grid grid-cols-1
+                                       sm:grid-cols-2 gap-2
+                                       text-[10px] font-mono"
+                            >
+
+                                <div
+                                    class="bg-black/20
+                                           border border-orange-900/60
+                                           rounded p-2"
+                                >
+                                    <span class="text-orange-300 block">
+                                        Suitability score
+                                    </span>
+
+                                    <span
+                                        id="scope-score"
+                                        class="text-slate-200"
+                                    >
+                                        &mdash;
+                                    </span>
+                                </div>
+
+                                <div
+                                    class="bg-black/20
+                                           border border-orange-900/60
+                                           rounded p-2"
+                                >
+                                    <span class="text-orange-300 block">
+                                        Reference threshold
+                                    </span>
+
+                                    <span
+                                        id="scope-threshold"
+                                        class="text-slate-200"
+                                    >
+                                        &mdash;
+                                    </span>
+                                </div>
+
+                            </div>
+
+                            <p
+                                class="mt-3 text-[10px]
+                                       text-orange-200/80
+                                       leading-relaxed"
+                            >
+                                This warning does not mean RETINA has detected
+                                or diagnosed another eye disease. The DR result
+                                is still displayed, but it should be interpreted
+                                with additional caution and reviewed by an
+                                eye-care professional.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
 
                 {{-- ================================================= --}}
                 {{-- CLASS PROBABILITIES                               --}}
@@ -1899,6 +2002,69 @@
                 } else {
 
                     atypicalFlag
+                        .classList
+                        .add('hidden');
+
+                }
+
+
+
+                // ========================================================
+                // DR SCOPE CHECK - MASTER 12
+                // ========================================================
+
+                const scopeWarning =
+                    document.getElementById('scope-warning');
+
+
+                if (data.scope_warning === true) {
+
+                    const scopeScore =
+                        Number(data.master12_score);
+
+                    const scopeThreshold =
+                        Number(data.master12_threshold);
+
+
+                    document
+                        .getElementById('scope-warning-text')
+                        .innerText =
+
+                        data.scope_warning_message
+                        || `RETINA recognizes this as a retinal photograph, `
+                        + `but its appearance is less similar to the types of `
+                        + `retinal images represented in RETINA's diabetic-retinopathy `
+                        + `classification scope. This may occur with unusual retinal `
+                        + `lesions, structural changes, scarring, atypical findings, `
+                        + `or another retinal appearance that differs from the cases `
+                        + `represented during development.`;
+
+
+                    document
+                        .getElementById('scope-score')
+                        .innerText =
+
+                        Number.isFinite(scopeScore)
+                            ? scopeScore.toFixed(4)
+                            : 'Not recorded';
+
+
+                    document
+                        .getElementById('scope-threshold')
+                        .innerText =
+
+                        Number.isFinite(scopeThreshold)
+                            ? scopeThreshold.toFixed(3)
+                            : 'Not recorded';
+
+
+                    scopeWarning
+                        .classList
+                        .remove('hidden');
+
+                } else {
+
+                    scopeWarning
                         .classList
                         .add('hidden');
 

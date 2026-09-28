@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prediction #{{ $prediction->id }} â€” DR Detection System</title>
+    <title>Prediction #{{ $prediction->id }} — DR Detection System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-800 text-slate-100 min-h-screen font-mono">
@@ -24,8 +24,8 @@
         4 => 'border-red-600 text-red-300',
     ];
     $probs = $prediction->probabilities ?? [];
-$referralProb = $prediction->referable_probability;
-$referralThreshold = 0.49;
+    $referralProb = $prediction->referable_probability;
+    $referralThreshold = 0.49;
 @endphp
 
 <header class="bg-slate-900 border-b border-slate-700 p-5 text-center">
@@ -90,6 +90,64 @@ $referralThreshold = 0.49;
     {{-- Result --}}
     <section class="space-y-4">
 
+        {{-- DR Scope Check — Master 12 soft warning --}}
+        @if ($prediction->scope_warning)
+        <div class="border-2 border-orange-700 bg-orange-950/40 rounded p-4">
+            <div class="flex items-start gap-3">
+
+                <span class="text-orange-400 text-lg leading-none mt-0.5">
+                    &#9888;
+                </span>
+
+                <div class="flex-1">
+                    <p class="font-bold text-orange-300 tracking-wide">
+                        DR SCOPE CHECK — ADDITIONAL CAUTION RECOMMENDED
+                    </p>
+
+                    <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                        RETINA recognizes this as a retinal photograph, but its appearance is less
+                        similar to the types of retinal images represented in RETINA's
+                        diabetic-retinopathy classification scope.
+                    </p>
+
+                    <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                        This may occur with unusual retinal lesions, structural changes, scarring,
+                        atypical findings, or another retinal appearance that differs from the cases
+                        represented during development.
+                    </p>
+
+                    <p class="text-xs text-orange-200 mt-2 font-semibold leading-relaxed">
+                        This warning does not mean RETINA has detected or diagnosed another eye disease.
+                        RETINA has still provided a diabetic-retinopathy grade below. Interpret the result
+                        with additional caution and professional ophthalmic review.
+                    </p>
+
+                    @if (
+                        $prediction->master12_score !== null
+                        && $prediction->master12_threshold !== null
+                    )
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                        <div class="bg-black/20 border border-orange-900/60 rounded p-2">
+                            <p class="text-orange-300">Suitability score</p>
+                            <p class="text-slate-100 mt-1">
+                                {{ number_format($prediction->master12_score, 4) }}
+                            </p>
+                        </div>
+
+                        <div class="bg-black/20 border border-orange-900/60 rounded p-2">
+                            <p class="text-orange-300">Reference threshold</p>
+                            <p class="text-slate-100 mt-1">
+                                {{ number_format($prediction->master12_threshold, 3) }}
+                            </p>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+
+            </div>
+        </div>
+        @endif
+
         {{-- Referral verdict --}}
         @if ($prediction->referral_flag)
         <div class="border-2 border-red-600 bg-red-950/40 rounded p-4">
@@ -152,7 +210,7 @@ $referralThreshold = 0.49;
             <p class="text-xs uppercase tracking-widest text-slate-400 mb-3">Class probability distribution</p>
  @foreach ($probs as $row)
                 @php
-                    $label = $row['label'] ?? 'â€”';
+                    $label = $row['label'] ?? '—';
                     $value = (float) ($row['probability'] ?? 0);
                 @endphp
                 <div class="mb-2">

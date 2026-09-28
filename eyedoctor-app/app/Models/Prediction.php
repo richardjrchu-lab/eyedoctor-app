@@ -19,6 +19,12 @@ class Prediction extends Model
 'flagged_for_review',
         'atypical_fundus_image',
         'fundus_signature_score',
+
+        'master12_score',
+        'master12_threshold',
+        'dr_scope_passed',
+        'scope_warning',
+
         'gradcam_path',
         'model_version',
     ];
@@ -31,6 +37,11 @@ class Prediction extends Model
         'fundus_signature_score' => 'float',
         'confidence_score' => 'float',
         'referable_probability' => 'float',
+        'master12_score' => 'float',
+        'master12_threshold' => 'float',
+        'dr_scope_passed' => 'boolean',
+        'scope_warning' => 'boolean',
+
     ];
 
     public function image()
