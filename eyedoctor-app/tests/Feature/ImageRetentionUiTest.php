@@ -14,6 +14,7 @@ beforeEach(function () {
 
     $this->doctor = User::factory()->create();
     $this->doctor->assignRole('doctor');
+    acceptCurrentRetinaLegalDocuments($this->doctor);
 
     $this->image = Image::create([
         'user_id' => $this->doctor->id,
@@ -111,6 +112,7 @@ test('authorized purged image request returns controlled 404 without touching st
 test('another doctor cannot access a purged image source route', function () {
     $otherDoctor = User::factory()->create();
     $otherDoctor->assignRole('doctor');
+    acceptCurrentRetinaLegalDocuments($otherDoctor);
 
     $response = $this
         ->actingAs($otherDoctor)

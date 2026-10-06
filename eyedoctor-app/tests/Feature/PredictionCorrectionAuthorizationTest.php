@@ -13,9 +13,11 @@ beforeEach(function () {
 
     $this->owner = User::factory()->create();
     $this->owner->assignRole('doctor');
+    acceptCurrentRetinaLegalDocuments($this->owner);
 
     $this->otherDoctor = User::factory()->create();
     $this->otherDoctor->assignRole('doctor');
+    acceptCurrentRetinaLegalDocuments($this->otherDoctor);
 
     $this->image = Image::create([
         'user_id' => $this->owner->id,

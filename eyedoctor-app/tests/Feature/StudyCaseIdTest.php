@@ -68,6 +68,8 @@ function retinaStudyCaseDoctor(): User
 
     $user->assignRole('doctor');
 
+    acceptCurrentRetinaLegalDocuments($user);
+
     return $user;
 }
 
