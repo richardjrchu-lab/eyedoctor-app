@@ -208,6 +208,12 @@ Route::middleware([
     )
         ->middleware('throttle:10,1')
         ->name('mobile-app.download');
+    Route::get(
+        '/mobile-app/download/windows',
+        [MobileAppController::class, 'downloadWindows']
+    )
+        ->middleware('throttle:10,1')
+        ->name('mobile-app.download.windows');
 
 });
 

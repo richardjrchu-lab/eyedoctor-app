@@ -15,7 +15,7 @@
     >
 
     <title>
-        RETINA Mobile App
+        RETINA Application Downloads
     </title>
 
     <link
@@ -101,7 +101,7 @@
                     <path d="M10 18h4" />
                 </svg>
 
-                Android Application
+                Application Downloads
 
             </div>
 
@@ -112,7 +112,7 @@
                        text-[#f1f5f9]
                        sm:text-4xl"
             >
-                RETINA Mobile
+                RETINA Applications
             </h1>
 
 
@@ -122,9 +122,9 @@
                        text-[#94a3b8]
                        sm:text-base"
             >
-                Access the Android version of the RETINA Diabetic
-                Retinopathy Detection System for authorized professional,
-                research, and approved clinical screening workflows.
+                Download the approved Android and Windows versions of the RETINA
+                Diabetic Retinopathy Detection System for authorized professional,
+                research, and approved screening workflows.
             </p>
 
         </div>
@@ -350,7 +350,7 @@
                                    text-sm font-semibold
                                    text-[#cbd5e1]"
                         >
-                            {{ $appVersion ?: 'Pending release' }}
+                            {{ $appVersion ?: 'Not verified' }}
                         </div>
 
                     </div>
@@ -380,7 +380,7 @@
                                    text-sm font-semibold
                                    text-[#cbd5e1]"
                         >
-                            {{ $versionCode ?: 'Pending' }}
+                            {{ $versionCode ?: 'Not verified' }}
                         </div>
 
                     </div>
@@ -445,7 +445,7 @@
                                font-mono text-sm
                                text-[#cbd5e1]"
                     >
-                        {{ $packageId ?: 'Pending' }}
+                        {{ $packageId ?: 'Not verified' }}
                     </div>
 
                 </div>
@@ -577,7 +577,7 @@
                     class="text-lg font-bold
                            text-[#f1f5f9]"
                 >
-                    Installation Guide
+                    Android Installation Guide
                 </h2>
 
 
@@ -772,6 +772,239 @@
 
 
         {{-- ========================================================= --}}
+        {{-- WINDOWS DESKTOP APPLICATION                              --}}
+        {{-- ========================================================= --}}
+
+        <section
+            class="mt-6 rounded-2xl
+                   border border-[#334155]
+                   bg-[#0f172a]
+                   p-6
+                   shadow-xl shadow-black/10
+                   sm:p-8"
+        >
+
+            <div
+                class="flex flex-col gap-6
+                       sm:flex-row
+                       sm:items-start
+                       sm:justify-between"
+            >
+
+                <div>
+
+                    <div
+                        class="text-xs font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Windows Desktop
+                    </div>
+
+                    <h2
+                        class="mt-2 text-xl font-bold
+                               text-[#f1f5f9]"
+                    >
+                        RETINA for Windows
+                    </h2>
+
+                    <p
+                        class="mt-2 max-w-2xl
+                               text-sm leading-6
+                               text-[#94a3b8]"
+                    >
+                        Download the RETINA Windows desktop package for
+                        authorized professional and research use.
+                    </p>
+
+                </div>
+
+                @if ($windowsAvailable)
+
+                    <span
+                        class="inline-flex w-fit
+                               items-center gap-2
+                               rounded-full
+                               border border-emerald-800
+                               bg-emerald-950/30
+                               px-3 py-1.5
+                               text-xs font-semibold
+                               text-emerald-300"
+                    >
+                        <span
+                            class="h-2 w-2 rounded-full
+                                   bg-emerald-400"
+                        ></span>
+
+                        Available
+                    </span>
+
+                @else
+
+                    <span
+                        class="inline-flex w-fit
+                               items-center gap-2
+                               rounded-full
+                               border border-[#475569]
+                               bg-[#1e293b]
+                               px-3 py-1.5
+                               text-xs font-semibold
+                               text-[#94a3b8]"
+                    >
+                        <span
+                            class="h-2 w-2 rounded-full
+                                   bg-[#64748b]"
+                        ></span>
+
+                        Unavailable
+                    </span>
+
+                @endif
+
+            </div>
+
+
+            <div
+                class="mt-7 grid
+                       grid-cols-1 gap-3
+                       sm:grid-cols-3"
+            >
+
+                <div
+                    class="rounded-xl
+                           border border-[#334155]
+                           bg-[#1e293b]
+                           p-4"
+                >
+                    <div
+                        class="text-[10px]
+                               font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Version
+                    </div>
+
+                    <div
+                        class="mt-1 text-sm font-semibold
+                               text-[#cbd5e1]"
+                    >
+                        {{ $windowsVersion ?: 'Not verified' }}
+                    </div>
+                </div>
+
+
+                <div
+                    class="rounded-xl
+                           border border-[#334155]
+                           bg-[#1e293b]
+                           p-4"
+                >
+                    <div
+                        class="text-[10px]
+                               font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Platform
+                    </div>
+
+                    <div
+                        class="mt-1 text-sm font-semibold
+                               text-[#cbd5e1]"
+                    >
+                        Windows
+                    </div>
+                </div>
+
+
+                <div
+                    class="rounded-xl
+                           border border-[#334155]
+                           bg-[#1e293b]
+                           p-4"
+                >
+                    <div
+                        class="text-[10px]
+                               font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Package
+                    </div>
+
+                    <div
+                        class="mt-1 text-sm font-semibold
+                               text-[#cbd5e1]"
+                    >
+                        ZIP
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div
+                class="mt-7
+                       border-t border-[#334155]
+                       pt-6"
+            >
+
+                @if ($windowsAvailable)
+
+                    <a
+                        href="{{ route('mobile-app.download.windows') }}"
+                        class="inline-flex w-full
+                               items-center justify-center
+                               gap-2 rounded-lg
+                               border border-[#64748b]
+                               bg-[#334155]
+                               px-5 py-3
+                               text-sm font-bold
+                               text-[#f1f5f9]
+                               transition
+                               hover:bg-[#475569]
+                               sm:w-auto"
+                    >
+                        Download Windows ZIP
+                    </a>
+
+                @else
+
+                    <button
+                        type="button"
+                        disabled
+                        class="inline-flex w-full
+                               cursor-not-allowed
+                               items-center justify-center
+                               rounded-lg
+                               border border-[#334155]
+                               bg-[#1e293b]
+                               px-5 py-3
+                               text-sm font-semibold
+                               text-[#64748b]
+                               sm:w-auto"
+                    >
+                        Windows Package Not Available
+                    </button>
+
+                @endif
+
+                <p
+                    class="mt-3
+                           text-xs leading-5
+                           text-[#64748b]"
+                >
+                    Download the ZIP package, extract it completely,
+                    then launch RETINA.exe from the extracted folder.
+                    Authentication is required for every download.
+                </p>
+
+            </div>
+
+        </section>
+
+        {{-- ========================================================= --}}
         {{-- AUTHORIZED DISTRIBUTION NOTICE                            --}}
         {{-- ========================================================= --}}
 
@@ -869,7 +1102,7 @@
                 class="text-sm font-bold
                        text-[#cbd5e1]"
             >
-                About RETINA Mobile
+                About RETINA Applications
             </h2>
 
 
@@ -878,11 +1111,10 @@
                        text-xs leading-6
                        text-[#64748b]"
             >
-                RETINA Mobile extends the Diabetic Retinopathy Detection
-                System to supported Android devices. The application is
-                intended to assist authorized users in diabetic retinopathy
-                screening workflows using the RETINA artificial intelligence
-                model.
+                RETINA Applications provide Android and Windows implementations of
+                the Diabetic Retinopathy Detection System. They are intended
+                to assist authorized users in diabetic retinopathy screening
+                workflows using the RETINA artificial intelligence system.
             </p>
 
 
