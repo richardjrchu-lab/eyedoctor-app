@@ -50,15 +50,22 @@ class EnsureLegalAccepted
     private function rememberIntendedGetRequest(Request $request): void
     {
         /*
-         * Preserve safe GET destinations such as /screening or /history so the
-         * user can continue where they were going after legal onboarding.
+         * Preserve only safe GET destinations so the user can return to the
+         * page they originally requested after completing legal onboarding.
          *
-         * Never preserve POST/PATCH/DELETE requests as an intended destination.
-         * Replaying them as GET requests after acceptance would be incorrect
-         * and could produce confusing or unsafe application behavior.
+         * Store only the internal request URI rather than an absolute URL.
+         * This prevents request Host headers from influencing the eventual
+         * intended redirect destination.
+         *
+         * POST, PATCH, PUT, and DELETE requests are deliberately not stored.
+         * Replaying a state-changing request as a later GET redirect would be
+         * semantically incorrect.
          */
         if ($request->isMethod('GET')) {
-            $request->session()->put('url.intended', $request->fullUrl());
+            $request->session()->put(
+                'url.intended',
+                $request->getRequestUri()
+            );
         }
     }
 }

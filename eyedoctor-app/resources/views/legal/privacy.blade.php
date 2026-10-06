@@ -62,7 +62,6 @@
                 sans-serif;
         }
 
-
         /* =========================================================
            RETINA HEADER
         ========================================================= */
@@ -126,7 +125,6 @@
             font-size: 12px;
         }
 
-
         /* =========================================================
            USER
         ========================================================= */
@@ -187,7 +185,6 @@
             border-color: #64748b;
         }
 
-
         /* =========================================================
            PAGE
         ========================================================= */
@@ -216,7 +213,6 @@
             box-shadow:
                 0 18px 45px rgba(0, 0, 0, 0.20);
         }
-
 
         /* =========================================================
            DOCUMENT TITLE
@@ -262,7 +258,6 @@
 
             font-size: 12px;
         }
-
 
         /* =========================================================
            DOCUMENT CONTENT
@@ -322,7 +317,6 @@
             font-size: 13px;
             line-height: 1.65;
         }
-
 
         /* =========================================================
            ACCEPTANCE FOOTER
@@ -454,7 +448,6 @@
             transform: translateY(1px);
         }
 
-
         /* =========================================================
            MOBILE
         ========================================================= */
@@ -512,7 +505,6 @@
     </style>
 </head>
 
-
 <body>
 
     {{-- =========================================================
@@ -524,7 +516,7 @@
         <div class="retina-header-inner">
 
             <a
-                href="{{ route('welcome') }}"
+                href="{{ auth()->user()?->hasRole('admin') ? route('history') : route('welcome') }}"
                 class="brand"
             >
 
@@ -548,7 +540,6 @@
 
             </a>
 
-
             @auth
 
                 <div class="user-area">
@@ -571,7 +562,6 @@
                         </div>
 
                     </div>
-
 
                     <form
                         method="POST"
@@ -597,7 +587,6 @@
 
     </header>
 
-
     {{-- =========================================================
          PRIVACY NOTICE
     ========================================================= --}}
@@ -617,13 +606,12 @@
                 </h1>
 
                 <div class="document-meta">
-                    Version 1.0
+                    Version {{ $privacyVersion }}
                     &nbsp;•&nbsp;
-                    Last Updated: September 3, 2026
+                    Last Updated: {{ $privacyLastUpdated }}
                 </div>
 
             </div>
-
 
             <div class="document-content">
 
@@ -632,7 +620,6 @@
                     stored, protected, retained, and deleted when RETINA Web
                     is used.
                 </p>
-
 
                 <section class="section">
 
@@ -657,7 +644,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -674,7 +660,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="section">
 
@@ -698,7 +683,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -721,7 +705,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -740,7 +723,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="section">
 
@@ -764,7 +746,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -784,7 +765,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="section">
 
@@ -807,7 +787,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="section">
 
@@ -835,7 +814,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -855,7 +833,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="section">
 
@@ -882,7 +859,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -904,7 +880,6 @@
 
                 </section>
 
-
                 <section class="section">
 
                     <h2>
@@ -924,7 +899,6 @@
 
                 </section>
 
-
                 <div class="notice-box">
                     RETINA Web is designed to limit unnecessary identifying
                     information and to use coded information where
@@ -933,7 +907,6 @@
                 </div>
 
             </div>
-
 
             {{-- =====================================================
                  PRIVACY ACKNOWLEDGMENT
@@ -947,6 +920,11 @@
 
                 @csrf
 
+                <input
+                    type="hidden"
+                    name="document_version"
+                    value="{{ $privacyVersion }}"
+                >
 
                 <label class="checkbox-row">
 
@@ -967,7 +945,6 @@
 
                 </label>
 
-
                 @error('acknowledge')
 
                     <div class="error">
@@ -977,6 +954,13 @@
 
                 @enderror
 
+                @error('document_version')
+
+                    <div class="error">
+                        {{ $message }}
+                    </div>
+
+                @enderror
 
                 <div class="button-row">
 
@@ -986,7 +970,6 @@
                     >
                         Back
                     </a>
-
 
                     <button
                         type="submit"

@@ -6,12 +6,17 @@ return [
     | RETINA Legal Document Versions
     |--------------------------------------------------------------------------
     |
-    | Increment a version whenever the corresponding legal document changes.
-    | Existing acceptance records remain associated with the version that
-    | the user actually accepted.
+    | Increment the relevant version whenever the corresponding legal
+    | document changes materially.
+    |
+    | The displayed version, submitted version, middleware enforcement,
+    | and stored acceptance record all derive from this configuration.
     |
     */
 
     'eula_version' => '1.0',
+    'eula_last_updated' => 'September 3, 2026',
+
     'privacy_version' => '1.0',
+    'privacy_last_updated' => 'September 3, 2026',
 ];

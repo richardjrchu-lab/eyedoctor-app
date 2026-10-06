@@ -464,7 +464,6 @@
     </style>
 </head>
 
-
 <body>
 
     {{-- =========================================================
@@ -476,7 +475,7 @@
         <div class="retina-header-inner">
 
             <a
-                href="{{ route('welcome') }}"
+                href="{{ auth()->user()?->hasRole('admin') ? route('history') : route('welcome') }}"
                 class="retina-brand"
             >
 
@@ -500,7 +499,6 @@
 
             </a>
 
-
             @auth
 
                 <div class="user-section">
@@ -512,11 +510,17 @@
                         </div>
 
                         <div class="user-role">
-                            Doctor
+                            @if(
+                                method_exists(auth()->user(), 'hasRole') &&
+                                auth()->user()->hasRole('admin')
+                            )
+                                Administrator
+                            @else
+                                Doctor
+                            @endif
                         </div>
 
                     </div>
-
 
                     <form
                         method="POST"
@@ -542,7 +546,6 @@
 
     </header>
 
-
     {{-- =========================================================
          EULA
     ========================================================= --}}
@@ -562,12 +565,11 @@
                 </h1>
 
                 <div class="document-meta">
-                    Version 1.0 &nbsp;•&nbsp;
-                    Last Updated: September 3, 2026
+                    Version {{ $eulaVersion }} &nbsp;•&nbsp;
+                    Last Updated: {{ $eulaLastUpdated }}
                 </div>
 
             </header>
-
 
             <div class="document-body">
 
@@ -575,7 +577,6 @@
                     By accessing or using RETINA Web, you acknowledge that
                     you have read, understood, and agreed to the terms below.
                 </p>
-
 
                 <section class="document-section">
 
@@ -599,7 +600,6 @@
 
                 </section>
 
-
                 <section class="document-section">
 
                     <h2>
@@ -613,7 +613,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="document-section">
 
@@ -630,7 +629,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="document-section">
 
@@ -654,7 +652,6 @@
 
                 </section>
 
-
                 <section class="document-section">
 
                     <h2>
@@ -669,7 +666,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="document-section">
 
@@ -688,7 +684,6 @@
 
                 </section>
 
-
                 <section class="document-section">
 
                     <h2>
@@ -703,7 +698,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="document-section">
 
@@ -720,7 +714,6 @@
 
                 </section>
 
-
                 <section class="document-section">
 
                     <h2>
@@ -736,7 +729,6 @@
 
                 </section>
 
-
                 <section class="document-section">
 
                     <h2>
@@ -751,7 +743,6 @@
 
                 </section>
 
-
                 <section class="document-section">
 
                     <h2>
@@ -764,7 +755,6 @@
                     </p>
 
                 </section>
-
 
                 <section class="document-section">
 
@@ -781,7 +771,6 @@
 
                 </section>
 
-
                 <div class="clinical-disclaimer">
                     FOR CLINICAL DECISION SUPPORT ONLY. RETINA Web predictions
                     must be reviewed by a qualified eye-care professional and
@@ -789,7 +778,6 @@
                 </div>
 
             </div>
-
 
             {{-- =====================================================
                  ACCEPTANCE
@@ -803,6 +791,11 @@
 
                 @csrf
 
+                <input
+                    type="hidden"
+                    name="document_version"
+                    value="{{ $eulaVersion }}"
+                >
 
                 <label class="agreement-row">
 
@@ -824,7 +817,6 @@
 
                 </label>
 
-
                 @error('agree')
 
                     <div class="error-message">
@@ -833,6 +825,13 @@
 
                 @enderror
 
+                @error('document_version')
+
+                    <div class="error-message">
+                        {{ $message }}
+                    </div>
+
+                @enderror
 
                 <div class="action-row">
 
