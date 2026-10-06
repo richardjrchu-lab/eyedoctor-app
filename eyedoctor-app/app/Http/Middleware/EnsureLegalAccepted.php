@@ -17,8 +17,14 @@ class EnsureLegalAccepted
             return redirect()->route('login');
         }
 
-        $eulaVersion = (string) config('legal.eula_version');
-        $privacyVersion = (string) config('legal.privacy_version');
+        /*
+         * Legal document versions are security-sensitive configuration.
+         *
+         * Fail closed if either version is missing or blank rather than
+         * silently querying or accepting an empty document version.
+         */
+        $eulaVersion = $this->configuredVersion('eula_version');
+        $privacyVersion = $this->configuredVersion('privacy_version');
 
         $eulaAccepted = LegalAcceptance::query()
             ->where('user_id', $user->id)
@@ -45,6 +51,20 @@ class EnsureLegalAccepted
         }
 
         return $next($request);
+    }
+
+    private function configuredVersion(string $key): string
+    {
+        $version = trim((string) config("legal.{$key}"));
+
+        if ($version === '') {
+            abort(
+                500,
+                'Legal document version is not configured.'
+            );
+        }
+
+        return $version;
     }
 
     private function rememberIntendedGetRequest(Request $request): void

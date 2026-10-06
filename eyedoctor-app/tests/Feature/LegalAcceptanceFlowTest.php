@@ -2,6 +2,7 @@
 
 use App\Models\LegalAcceptance;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 function createLegalTestDoctor(): User
@@ -90,7 +91,10 @@ test('repeated EULA submission does not create duplicate acceptance records', fu
     )->toBe(1);
 
     expect(
-        $firstAcceptance->fresh()->accepted_at->equalTo($originalAcceptedAt)
+        $firstAcceptance
+            ->fresh()
+            ->accepted_at
+            ->equalTo($originalAcceptedAt)
     )->toBeTrue();
 });
 
@@ -187,10 +191,6 @@ test('completed legal onboarding returns doctor to original protected page', fun
     $eulaVersion = (string) config('legal.eula_version');
     $privacyVersion = (string) config('legal.privacy_version');
 
-    /*
-     * This request is blocked by legal.accepted and should store only
-     * the internal /screening URI as the intended destination.
-     */
     $this
         ->actingAs($user)
         ->get(route('screening'))
@@ -243,7 +243,7 @@ test('authorized doctor can access application downloads without Web legal accep
 
     $user->assignRole('doctor');
 
-    \Illuminate\Support\Facades\Storage::fake('app_downloads');
+    Storage::fake('app_downloads');
 
     $this
         ->actingAs($user)
@@ -252,5 +252,43 @@ test('authorized doctor can access application downloads without Web legal accep
 
     $this->assertDatabaseMissing('legal_acceptances', [
         'user_id' => $user->id,
+    ]);
+});
+
+test('legal middleware fails closed when EULA version is not configured', function () {
+    $user = createLegalTestDoctor();
+
+    config([
+        'legal.eula_version' => '',
+    ]);
+
+    $this
+        ->actingAs($user)
+        ->get(route('screening'))
+        ->assertStatus(500);
+
+    $this->assertDatabaseMissing('legal_acceptances', [
+        'user_id' => $user->id,
+        'document_type' => 'eula',
+        'document_version' => '',
+    ]);
+});
+
+test('legal middleware fails closed when privacy version is not configured', function () {
+    $user = createLegalTestDoctor();
+
+    config([
+        'legal.privacy_version' => '   ',
+    ]);
+
+    $this
+        ->actingAs($user)
+        ->get(route('screening'))
+        ->assertStatus(500);
+
+    $this->assertDatabaseMissing('legal_acceptances', [
+        'user_id' => $user->id,
+        'document_type' => 'privacy',
+        'document_version' => '',
     ]);
 });
