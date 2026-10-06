@@ -9,33 +9,10 @@ use Illuminate\View\View;
 
 class LegalController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | CURRENT LEGAL DOCUMENT VERSIONS
-    |--------------------------------------------------------------------------
-    */
-
-    private const EULA_VERSION = '1.0';
-    private const PRIVACY_VERSION = '1.0';
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SHOW EULA
-    |--------------------------------------------------------------------------
-    */
-
     public function showEula(Request $request): View
     {
         return view('legal.eula');
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACCEPT EULA
-    |--------------------------------------------------------------------------
-    */
 
     public function acceptEula(Request $request): RedirectResponse
     {
@@ -43,47 +20,29 @@ class LegalController extends Controller
             'agree' => ['accepted'],
         ]);
 
-        LegalAcceptance::updateOrCreate(
+        LegalAcceptance::firstOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'document_type' => 'eula',
-                'document_version' => self::EULA_VERSION,
+                'document_version' => (string) config('legal.eula_version'),
             ],
             [
                 'accepted_at' => now(),
             ]
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | AFTER EULA -> PRIVACY NOTICE
-        |--------------------------------------------------------------------------
-        */
-
         return redirect()->route('legal.privacy');
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | SHOW PRIVACY NOTICE
-    |--------------------------------------------------------------------------
-    */
-
     public function showPrivacy(Request $request): View|RedirectResponse
     {
-        /*
-        |--------------------------------------------------------------------------
-        | REQUIRE CURRENT EULA FIRST
-        |--------------------------------------------------------------------------
-        */
-
-        $eulaAccepted = LegalAcceptance::where(
-                'user_id',
-                $request->user()->id
-            )
+        $eulaAccepted = LegalAcceptance::query()
+            ->where('user_id', $request->user()->id)
             ->where('document_type', 'eula')
-            ->where('document_version', self::EULA_VERSION)
+            ->where(
+                'document_version',
+                (string) config('legal.eula_version')
+            )
             ->exists();
 
         if (!$eulaAccepted) {
@@ -93,40 +52,40 @@ class LegalController extends Controller
         return view('legal.privacy');
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACCEPT PRIVACY NOTICE
-    |--------------------------------------------------------------------------
-    */
-
     public function acceptPrivacy(Request $request): RedirectResponse
     {
         $request->validate([
             'acknowledge' => ['accepted'],
         ]);
 
-        LegalAcceptance::updateOrCreate(
+        LegalAcceptance::firstOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'document_type' => 'privacy',
-                'document_version' => self::PRIVACY_VERSION,
+                'document_version' => (string) config('legal.privacy_version'),
             ],
             [
                 'accepted_at' => now(),
             ]
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | LEGAL ONBOARDING COMPLETE
-        |--------------------------------------------------------------------------
-        |
-        | Send the user to RETINA Web's default authenticated page:
-        | Overview.
-        |
-        */
+        return redirect()->intended(
+            $this->defaultDestination($request)
+        );
+    }
 
-        return redirect()->route('overview');
+    private function defaultDestination(Request $request): string
+    {
+        $user = $request->user();
+
+        if ($user->hasRole('admin')) {
+            return route('history');
+        }
+
+        if ($user->hasRole('doctor')) {
+            return route('welcome');
+        }
+
+        return route('profile.edit');
     }
 }
