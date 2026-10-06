@@ -399,3 +399,71 @@ test('legal onboarding pages do not link the brand into protected clinical route
         ->assertDontSee('href="' . route('history') . '"', false)
         ->assertDontSee('href="' . route('welcome') . '"', false);
 });
+
+test('admin completes Web legal onboarding and returns to clinical history', function () {
+    Role::findOrCreate('admin', 'web');
+
+    $user = User::factory()->create();
+    $user->assignRole('admin');
+
+    $eulaVersion = (string) config('legal.eula_version');
+    $privacyVersion = (string) config('legal.privacy_version');
+
+    /*
+     * An administrator entering the shared RETINA Web clinical area
+     * must complete the same current Web legal onboarding.
+     */
+    $this
+        ->actingAs($user)
+        ->get(route('history'))
+        ->assertRedirect(route('legal.eula'));
+
+    expect(session('url.intended'))->toBe('/history');
+
+    /*
+     * Accept the current EULA.
+     */
+    $this
+        ->actingAs($user)
+        ->post(route('legal.eula.accept'), [
+            'agree' => '1',
+            'document_version' => $eulaVersion,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('legal.privacy'));
+
+    /*
+     * Accept the current Privacy Notice.
+     */
+    $this
+        ->actingAs($user)
+        ->post(route('legal.privacy.accept'), [
+            'acknowledge' => '1',
+            'document_version' => $privacyVersion,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect('/history');
+
+    /*
+     * Both acceptance records must exist for the administrator.
+     */
+    $this->assertDatabaseHas('legal_acceptances', [
+        'user_id' => $user->id,
+        'document_type' => 'eula',
+        'document_version' => $eulaVersion,
+    ]);
+
+    $this->assertDatabaseHas('legal_acceptances', [
+        'user_id' => $user->id,
+        'document_type' => 'privacy',
+        'document_version' => $privacyVersion,
+    ]);
+
+    /*
+     * Once onboarding is complete, clinical history must be reachable.
+     */
+    $this
+        ->actingAs($user)
+        ->get(route('history'))
+        ->assertOk();
+});
