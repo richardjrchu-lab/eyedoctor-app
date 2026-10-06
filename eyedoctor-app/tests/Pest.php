@@ -48,3 +48,29 @@ function something()
 {
     // ..
 }
+function acceptCurrentRetinaLegalDocuments(\App\Models\User $user): void
+{
+    $now = now();
+
+    \App\Models\LegalAcceptance::firstOrCreate(
+        [
+            'user_id' => $user->id,
+            'document_type' => 'eula',
+            'document_version' => (string) config('legal.eula_version'),
+        ],
+        [
+            'accepted_at' => $now,
+        ]
+    );
+
+    \App\Models\LegalAcceptance::firstOrCreate(
+        [
+            'user_id' => $user->id,
+            'document_type' => 'privacy',
+            'document_version' => (string) config('legal.privacy_version'),
+        ],
+        [
+            'accepted_at' => $now,
+        ]
+    );
+}

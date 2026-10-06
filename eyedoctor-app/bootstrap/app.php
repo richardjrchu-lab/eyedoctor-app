@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnsureLegalAccepted;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Session\TokenMismatchException;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'legal.accepted' => EnsureLegalAccepted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -41,10 +43,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'cf-turnstile-response',
         ]);
 
-        // An expired CSRF token otherwise renders a blank "419 PAGE EXPIRED"
-        // with no explanation and no way forward. A clinician who leaves a tab
-        // open on a shared terminal has no reason to know that reloading fixes
-        // it. Send them back to login with a sentence that says what happened.
+        /*
+         * An expired CSRF token otherwise renders a blank 419 page with no
+         * useful explanation. Send the clinician back to login instead.
+         */
         $exceptions->render(function (TokenMismatchException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([

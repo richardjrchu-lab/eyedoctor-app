@@ -75,6 +75,7 @@ test(
 
         $user = User::factory()->create();
         $user->assignRole('doctor');
+        acceptCurrentRetinaLegalDocuments($user);
 
         Storage::fake('s3');
 
