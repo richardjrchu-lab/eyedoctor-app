@@ -42,18 +42,35 @@ class LegalController extends Controller
                 ]);
         }
 
-        LegalAcceptance::firstOrCreate(
-            [
-                'user_id' => $request->user()->id,
-                'document_type' => 'eula',
-                'document_version' => $currentVersion,
-            ],
-            [
-                'accepted_at' => now(),
-            ]
-        );
+LegalAcceptance::firstOrCreate(
+    [
+        'user_id' => $request->user()->id,
+        'document_type' => 'eula',
+        'document_version' => $currentVersion,
+    ],
+    [
+        'accepted_at' => now(),
+    ]
+);
 
-        return redirect()->route('legal.privacy');
+/*
+ * If the user has already acknowledged the current Privacy Notice,
+ * do not require them to acknowledge the unchanged document again.
+ *
+ * This matters when only the EULA version changes.
+ */
+if ($this->hasAccepted(
+    $request,
+    'privacy',
+    $this->privacyVersion()
+)) {
+    return redirect()->intended(
+        $this->defaultDestination($request)
+    );
+}
+
+return redirect()->route('legal.privacy');
+
     }
 
     public function showPrivacy(Request $request): View|RedirectResponse

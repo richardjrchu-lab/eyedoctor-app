@@ -292,3 +292,70 @@ test('legal middleware fails closed when privacy version is not configured', fun
         'document_version' => '',
     ]);
 });
+
+test('new EULA does not require re-acknowledgement of unchanged privacy notice', function () {
+    $user = createLegalTestDoctor();
+
+    config([
+        'legal.eula_version' => '2.0',
+        'legal.privacy_version' => '1.0',
+    ]);
+
+    LegalAcceptance::create([
+        'user_id' => $user->id,
+        'document_type' => 'eula',
+        'document_version' => '1.0',
+        'accepted_at' => now()->subDay(),
+    ]);
+
+    LegalAcceptance::create([
+        'user_id' => $user->id,
+        'document_type' => 'privacy',
+        'document_version' => '1.0',
+        'accepted_at' => now()->subDay(),
+    ]);
+
+    $privacyAcceptance = LegalAcceptance::query()
+        ->where('user_id', $user->id)
+        ->where('document_type', 'privacy')
+        ->where('document_version', '1.0')
+        ->firstOrFail();
+
+    $originalPrivacyAcceptedAt = $privacyAcceptance->accepted_at;
+
+    $this
+        ->actingAs($user)
+        ->get(route('screening'))
+        ->assertRedirect(route('legal.eula'));
+
+    expect(session('url.intended'))->toBe('/screening');
+
+    $this
+        ->actingAs($user)
+        ->post(route('legal.eula.accept'), [
+            'agree' => '1',
+            'document_version' => '2.0',
+        ])
+        ->assertRedirect('/screening');
+
+    $this->assertDatabaseHas('legal_acceptances', [
+        'user_id' => $user->id,
+        'document_type' => 'eula',
+        'document_version' => '2.0',
+    ]);
+
+    expect(
+        LegalAcceptance::query()
+            ->where('user_id', $user->id)
+            ->where('document_type', 'privacy')
+            ->where('document_version', '1.0')
+            ->count()
+    )->toBe(1);
+
+    expect(
+        $privacyAcceptance
+            ->fresh()
+            ->accepted_at
+            ->equalTo($originalPrivacyAcceptedAt)
+    )->toBeTrue();
+});
