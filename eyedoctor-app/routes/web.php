@@ -26,6 +26,7 @@ Route::view(
     'public.about'
 )->name('public.about');
 
+
 /*
 |--------------------------------------------------------------------------
 | Legal Onboarding
@@ -64,17 +65,18 @@ Route::middleware('auth')->group(function () {
 
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | Doctor Workspace
 |--------------------------------------------------------------------------
 |
 | Doctors land on the RETINA Overview Dashboard after authentication.
-| Screening remains doctor-only.
+| Screening and formal evaluation remain doctor-only.
 |
 | The legal.accepted middleware ensures that an authenticated doctor has
-| accepted the current EULA and Privacy Notice before accessing RETINA's
-| clinical workspace.
+| accepted the current RETINA Web EULA and Privacy Notice before accessing
+| the Web clinical workspace.
 |
 */
 
@@ -95,6 +97,7 @@ Route::middleware([
         [DashboardController::class, 'index']
     )->name('welcome');
 
+
     /*
     |--------------------------------------------------------------------------
     | Screening Workspace
@@ -105,6 +108,7 @@ Route::middleware([
         '/screening',
         [PredictionController::class, 'welcome']
     )->name('screening');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -138,6 +142,7 @@ Route::middleware([
 
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | Administrator Access Review
@@ -147,9 +152,9 @@ Route::middleware([
 | All mutations remain restricted to authenticated administrators.
 |
 | This administrative identity-management area intentionally remains
-| independent of the clinical legal-acceptance middleware. An administrator
-| can therefore continue reviewing professional access requests even when
-| RETINA's clinical-use legal documents have changed.
+| independent of the RETINA Web clinical legal-acceptance middleware.
+| Administrators can therefore continue reviewing professional access
+| requests even when RETINA Web legal documents have changed.
 |
 */
 
@@ -201,33 +206,25 @@ Route::middleware([
 
     });
 
+
 /*
 |--------------------------------------------------------------------------
-| Shared Professional Area
+| Shared RETINA Web Clinical Area
 |--------------------------------------------------------------------------
 |
-| Doctors can review their own records.
-| Administrators can review all authorized records.
+| Doctors can review their own RETINA Web records.
+| Administrators can review all authorized RETINA Web records.
 |
-| Doctors and administrators may access the protected RETINA application
-| distribution page.
-|
-| Because these resources contain clinical records or provide RETINA
-| application access, the current legal documents must be accepted first.
+| These routes expose Web clinical records and therefore require acceptance
+| of the current RETINA Web EULA and Privacy Notice.
 |
 */
 
 Route::middleware([
     'auth',
-    'legal.accepted',
     'role:doctor|admin',
+    'legal.accepted',
 ])->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Prediction History
-    |--------------------------------------------------------------------------
-    */
 
     Route::get(
         '/history',
@@ -244,22 +241,32 @@ Route::middleware([
         [PredictionController::class, 'imageFile']
     )->name('images.file');
 
-    /*
-    |--------------------------------------------------------------------------
-    | RETINA Application Distribution
-    |--------------------------------------------------------------------------
-    */
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| RETINA Application Distribution
+|--------------------------------------------------------------------------
+|
+| Android and Windows are separate RETINA implementations rather than
+| features of RETINA Web.
+|
+| Distribution remains limited to authenticated doctors and administrators,
+| but access does not depend on acceptance of the RETINA Web-specific EULA
+| or Privacy Notice.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'role:doctor|admin',
+])->group(function () {
 
     Route::get(
         '/mobile-app',
         [MobileAppController::class, 'index']
     )->name('mobile-app');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Android Download
-    |--------------------------------------------------------------------------
-    */
 
     Route::get(
         '/mobile-app/download',
@@ -267,12 +274,6 @@ Route::middleware([
     )
         ->middleware('throttle:10,1')
         ->name('mobile-app.download');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Windows Download
-    |--------------------------------------------------------------------------
-    */
 
     Route::get(
         '/mobile-app/download/windows',
@@ -283,6 +284,7 @@ Route::middleware([
 
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | Account Profile
@@ -292,7 +294,8 @@ Route::middleware([
 | users without legal.accepted.
 |
 | This preserves an account-management escape path if legal onboarding ever
-| becomes unavailable or a document configuration is accidentally broken.
+| becomes unavailable or a legal document configuration is accidentally
+| broken.
 |
 */
 
@@ -315,6 +318,7 @@ Route::middleware('auth')->group(function () {
 
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | Authentication Routes
@@ -322,6 +326,7 @@ Route::middleware('auth')->group(function () {
 */
 
 require __DIR__.'/auth.php';
+
 
 /*
 |--------------------------------------------------------------------------

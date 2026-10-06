@@ -235,3 +235,22 @@ test('profile remains available before legal acceptance', function () {
         ->get(route('profile.edit'))
         ->assertOk();
 });
+
+test('authorized doctor can access application downloads without Web legal acceptance', function () {
+    Role::findOrCreate('doctor', 'web');
+
+    $user = User::factory()->create();
+
+    $user->assignRole('doctor');
+
+    \Illuminate\Support\Facades\Storage::fake('app_downloads');
+
+    $this
+        ->actingAs($user)
+        ->get(route('mobile-app'))
+        ->assertOk();
+
+    $this->assertDatabaseMissing('legal_acceptances', [
+        'user_id' => $user->id,
+    ]);
+});
