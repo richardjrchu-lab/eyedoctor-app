@@ -359,3 +359,43 @@ test('new EULA does not require re-acknowledgement of unchanged privacy notice',
             ->equalTo($originalPrivacyAcceptedAt)
     )->toBeTrue();
 });
+
+test('legal onboarding pages do not link the brand into protected clinical routes', function () {
+    Role::findOrCreate('admin', 'web');
+
+    $user = User::factory()->create();
+    $user->assignRole('admin');
+
+    /*
+     * The EULA can be viewed before any legal acceptance exists.
+     */
+    $eula = $this
+        ->actingAs($user)
+        ->get(route('legal.eula'));
+
+    $eula
+        ->assertOk()
+        ->assertDontSee('href="' . route('history') . '"', false)
+        ->assertDontSee('href="' . route('welcome') . '"', false);
+
+    /*
+     * The Privacy Notice intentionally requires acceptance of the
+     * current EULA first. Create only that prerequisite so we can
+     * inspect the Privacy page itself without bypassing its flow.
+     */
+    LegalAcceptance::create([
+        'user_id' => $user->id,
+        'document_type' => 'eula',
+        'document_version' => (string) config('legal.eula_version'),
+        'accepted_at' => now(),
+    ]);
+
+    $privacy = $this
+        ->actingAs($user)
+        ->get(route('legal.privacy'));
+
+    $privacy
+        ->assertOk()
+        ->assertDontSee('href="' . route('history') . '"', false)
+        ->assertDontSee('href="' . route('welcome') . '"', false);
+});

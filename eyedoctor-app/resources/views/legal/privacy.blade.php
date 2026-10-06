@@ -92,9 +92,6 @@
             align-items: center;
 
             gap: 14px;
-
-            color: inherit;
-            text-decoration: none;
         }
 
         .brand-logo {
@@ -515,10 +512,7 @@
 
         <div class="retina-header-inner">
 
-            <a
-                href="{{ auth()->user()?->hasRole('admin') ? route('history') : route('welcome') }}"
-                class="brand"
-            >
+            <div class="brand">
 
                 <img
                     src="{{ asset('images/retina-logo.png') }}"
@@ -538,7 +532,7 @@
 
                 </div>
 
-            </a>
+            </div>
 
             @auth
 
@@ -551,6 +545,7 @@
                         </div>
 
                         <div class="user-role">
+
                             @if(
                                 method_exists(auth()->user(), 'hasRole') &&
                                 auth()->user()->hasRole('admin')
@@ -559,6 +554,7 @@
                             @else
                                 Doctor
                             @endif
+
                         </div>
 
                     </div>
@@ -606,9 +602,9 @@
                 </h1>
 
                 <div class="document-meta">
-                    Version {{ $privacyVersion }}
+                    Version {{ config('legal.privacy_version') }}
                     &nbsp;•&nbsp;
-                    Last Updated: {{ $privacyLastUpdated }}
+                    Last Updated: {{ config('legal.privacy_last_updated') }}
                 </div>
 
             </div>
@@ -923,7 +919,7 @@
                 <input
                     type="hidden"
                     name="document_version"
-                    value="{{ $privacyVersion }}"
+                    value="{{ config('legal.privacy_version') }}"
                 >
 
                 <label class="checkbox-row">

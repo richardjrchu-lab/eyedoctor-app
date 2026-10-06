@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
 
@@ -69,8 +70,6 @@
             align-items: center;
 
             gap: 14px;
-
-            text-decoration: none;
         }
 
         .retina-logo {
@@ -474,10 +473,7 @@
 
         <div class="retina-header-inner">
 
-            <a
-                href="{{ auth()->user()?->hasRole('admin') ? route('history') : route('welcome') }}"
-                class="retina-brand"
-            >
+            <div class="retina-brand">
 
                 <img
                     src="{{ asset('images/retina-logo.png') }}"
@@ -497,7 +493,7 @@
 
                 </div>
 
-            </a>
+            </div>
 
             @auth
 
@@ -510,6 +506,7 @@
                         </div>
 
                         <div class="user-role">
+
                             @if(
                                 method_exists(auth()->user(), 'hasRole') &&
                                 auth()->user()->hasRole('admin')
@@ -518,6 +515,7 @@
                             @else
                                 Doctor
                             @endif
+
                         </div>
 
                     </div>
@@ -565,8 +563,9 @@
                 </h1>
 
                 <div class="document-meta">
-                    Version {{ $eulaVersion }} &nbsp;•&nbsp;
-                    Last Updated: {{ $eulaLastUpdated }}
+                    Version {{ config('legal.eula_version') }}
+                    &nbsp;•&nbsp;
+                    Last Updated: {{ config('legal.eula_last_updated') }}
                 </div>
 
             </header>
@@ -794,7 +793,7 @@
                 <input
                     type="hidden"
                     name="document_version"
-                    value="{{ $eulaVersion }}"
+                    value="{{ config('legal.eula_version') }}"
                 >
 
                 <label class="agreement-row">
@@ -851,4 +850,5 @@
     </main>
 
 </body>
+
 </html>
