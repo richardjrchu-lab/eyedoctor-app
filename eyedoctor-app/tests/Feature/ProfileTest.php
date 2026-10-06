@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -9,7 +10,9 @@ test('profile page is displayed', function () {
         ->actingAs($user)
         ->get('/profile');
 
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertDontSee('Delete Account');
 });
 
 test('profile information can be updated', function () {
@@ -47,39 +50,27 @@ test('email verification status is unchanged when the email address is unchanged
         ->assertSessionHasNoErrors()
         ->assertRedirect('/profile');
 
-    $this->assertNotNull($user->refresh()->email_verified_at);
+    $this->assertNotNull(
+        $user->refresh()->email_verified_at
+    );
 });
 
-test('user can delete their account', function () {
+test('self service account deletion route is not registered', function () {
+    expect(
+        Route::has('profile.destroy')
+    )->toBeFalse();
+});
+
+test('delete requests cannot remove an authenticated account', function () {
     $user = User::factory()->create();
 
-    $response = $this
+    $this
         ->actingAs($user)
         ->delete('/profile', [
             'password' => 'password',
-        ]);
+        ])
+        ->assertStatus(405);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/');
-
-    $this->assertGuest();
-    $this->assertNull($user->fresh());
-});
-
-test('correct password must be provided to delete account', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->from('/profile')
-        ->delete('/profile', [
-            'password' => 'wrong-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrorsIn('userDeletion', 'password')
-        ->assertRedirect('/profile');
-
+    $this->assertAuthenticatedAs($user);
     $this->assertNotNull($user->fresh());
 });

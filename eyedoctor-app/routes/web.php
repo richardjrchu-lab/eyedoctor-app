@@ -86,35 +86,15 @@ Route::middleware([
     'role:doctor',
 ])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Overview Dashboard
-    |--------------------------------------------------------------------------
-    */
-
     Route::get(
         '/',
         [DashboardController::class, 'index']
     )->name('welcome');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Screening Workspace
-    |--------------------------------------------------------------------------
-    */
-
     Route::get(
         '/screening',
         [PredictionController::class, 'welcome']
     )->name('screening');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Formal Evaluation Workspace
-    |--------------------------------------------------------------------------
-    */
 
     Route::get(
         '/evaluation',
@@ -290,12 +270,12 @@ Route::middleware([
 | Account Profile
 |--------------------------------------------------------------------------
 |
-| Account-management routes deliberately remain available to authenticated
-| users without legal.accepted.
+| Users may review and update their account information.
 |
-| This preserves an account-management escape path if legal onboarding ever
-| becomes unavailable or a legal document configuration is accidentally
-| broken.
+| Self-service hard account deletion is intentionally unavailable because
+| user records are referenced by RETINA clinical, audit, and legal records.
+| Account access and lifecycle changes must therefore be handled through an
+| administrative process rather than destructive self-service deletion.
 |
 */
 
@@ -310,11 +290,6 @@ Route::middleware('auth')->group(function () {
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
-
-    Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
 
 });
 
