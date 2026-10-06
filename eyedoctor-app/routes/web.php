@@ -1,260 +1,176 @@
 <?php
 
-use App\Http\Controllers\AdminAccessRequestController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\MobileAppController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\PredictionController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RetentionTriggerController;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Public RETINA Information
-|--------------------------------------------------------------------------
-|
-| Public, non-clinical information intended for search discovery.
-| No patient data, predictions, study cases, or authenticated records
-| are exposed through this route.
-|
-*/
-
-Route::view(
-    '/about',
-    'public.about'
-)->name('public.about');
 
 /*
 |--------------------------------------------------------------------------
-| Doctor Workspace
+| PUBLIC ENTRY
 |--------------------------------------------------------------------------
 |
-| Doctors land on the RETINA Overview Dashboard after authentication.
-| Screening remains doctor-only.
+| Guests are sent to Login.
+| Authenticated users are sent to RETINA Overview.
 |
 */
 
-Route::middleware([
-    'auth',
-    'role:doctor',
-])->group(function () {
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('overview');
+    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Overview Dashboard
-    |--------------------------------------------------------------------------
-    */
+    return redirect()->route('login');
+})->name('welcome');
 
-    Route::get(
-        '/',
-        [DashboardController::class, 'index']
-    )->name('welcome');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Screening Workspace
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/screening',
-        [PredictionController::class, 'welcome']
-    )->name('screening');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Formal Evaluation Workspace
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/evaluation',
-        [PredictionController::class, 'evaluation']
-    )->name('evaluation');
-
-    Route::post(
-        '/predict',
-        [PredictionController::class, 'predict']
-    )
-        ->middleware('throttle:20,1')
-        ->name('predict');
-
-    Route::post(
-        '/evaluation/predict',
-        [PredictionController::class, 'predictEvaluation']
-    )
-        ->middleware('throttle:20,1')
-        ->name('evaluation.predict');
-
-    Route::post(
-        '/predictions/{prediction}/correct',
-        [PredictionController::class, 'correct']
-    )->name('predictions.correct');
-
-});
 
 /*
 |--------------------------------------------------------------------------
-| Administrator Access Review
+| AUTHENTICATED + VERIFIED USERS
 |--------------------------------------------------------------------------
-|
-| Protected professional-access review, decisions, and recovery actions.
-| All mutations remain restricted to authenticated administrators.
-|
 */
 
-Route::middleware([
-    'auth',
-    'role:admin',
-])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
 
-        Route::get(
-            '/access-requests',
-            [AdminAccessRequestController::class, 'index']
-        )->name('access-requests.index');
+    /*
+    |--------------------------------------------------------------------------
+    | LEGAL DOCUMENTS
+    |--------------------------------------------------------------------------
+    |
+    | These routes must NOT use legal.accepted because users need access
+    | to them before accepting the documents.
+    |
+    */
 
-        Route::get(
-            '/access-requests/{accessRequest:public_id}',
-            [AdminAccessRequestController::class, 'show']
-        )->name('access-requests.show');
+    Route::get('/legal/eula', [LegalController::class, 'showEula'])
+        ->name('legal.eula');
 
-        Route::get(
-            '/access-requests/{accessRequest:public_id}/proof',
-            [AdminAccessRequestController::class, 'proof']
-        )
-            ->middleware('throttle:admin-access-request-proof')
-            ->name('access-requests.proof');
+    Route::post('/legal/eula', [LegalController::class, 'acceptEula'])
+        ->name('legal.eula.accept');
 
-        Route::post(
-            '/access-requests/{accessRequest:public_id}/approve',
-            [AdminAccessRequestController::class, 'approve']
-        )
-            ->middleware('throttle:admin-access-request-decision')
-            ->name('access-requests.approve');
 
-        Route::post(
-            '/access-requests/{accessRequest:public_id}/reject',
-            [AdminAccessRequestController::class, 'reject']
-        )
-            ->middleware('throttle:admin-access-request-decision')
-            ->name('access-requests.reject');
+    Route::get('/legal/privacy', [LegalController::class, 'showPrivacy'])
+        ->name('legal.privacy');
 
-        Route::post(
-            '/access-requests/{accessRequest:public_id}/resend-setup',
-            [AdminAccessRequestController::class, 'resendSetup']
-        )
-            ->middleware('throttle:admin-access-request-setup-resend')
-            ->name('access-requests.resend-setup');
+    Route::post('/legal/privacy', [LegalController::class, 'acceptPrivacy'])
+        ->name('legal.privacy.accept');
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETINA WEB
+    |--------------------------------------------------------------------------
+    |
+    | Everything below requires the current EULA and Privacy Notice.
+    |
+    */
+
+    Route::middleware('legal.accepted')->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | OVERVIEW
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/overview', function () {
+            return view('overview');
+        })->name('overview');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SCREENING
+        |--------------------------------------------------------------------------
+        |
+        | Uses the existing welcome.blade.php in normal screening mode.
+        |
+        */
+
+        Route::get('/screening', function () {
+            return view('welcome', [
+                'evaluationMode' => false,
+            ]);
+        })->name('screening');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FORMAL EVALUATION
+        |--------------------------------------------------------------------------
+        |
+        | Uses the same screening workspace but enables Study Case ID mode.
+        |
+        */
+
+        Route::get('/evaluation', function () {
+            return view('welcome', [
+                'evaluationMode' => true,
+            ]);
+        })->name('evaluation');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STANDARD PREDICTION
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/predict', [PredictionController::class, 'predict'])
+            ->name('predict');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FORMAL EVALUATION PREDICTION
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/evaluation/predict', [PredictionController::class, 'predict'])
+            ->name('evaluation.predict');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OLD LARAVEL DASHBOARD
+        |--------------------------------------------------------------------------
+        |
+        | If anything still tries to open /dashboard, redirect it to
+        | RETINA Overview instead of showing the default Laravel page.
+        |
+        */
+
+        Route::get('/dashboard', function () {
+            return redirect()->route('overview');
+        })->name('dashboard');
     });
-
-/*
-|--------------------------------------------------------------------------
-| Shared Professional Area
-|--------------------------------------------------------------------------
-|
-| Doctors can review their own records.
-| Administrators can review all authorized records.
-|
-| Doctors and administrators may access the protected RETINA mobile
-| application distribution page.
-|
-*/
-
-Route::middleware([
-    'auth',
-    'role:doctor|admin',
-])->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Prediction History
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/history',
-        [PredictionController::class, 'history']
-    )->name('history');
-
-    Route::get(
-        '/predictions/{prediction}',
-        [PredictionController::class, 'show']
-    )->name('predictions.show');
-
-    Route::get(
-        '/images/{image}/file',
-        [PredictionController::class, 'imageFile']
-    )->name('images.file');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Mobile Application
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/mobile-app',
-        [MobileAppController::class, 'index']
-    )->name('mobile-app');
-
-    Route::get(
-        '/mobile-app/download',
-        [MobileAppController::class, 'download']
-    )
-        ->middleware('throttle:10,1')
-        ->name('mobile-app.download');
-
 });
 
+
 /*
 |--------------------------------------------------------------------------
-| Account Profile
+| PROFILE
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
 
-    Route::get(
-        '/profile',
-        [ProfileController::class, 'edit']
-    )->name('profile.edit');
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
 
-    Route::patch(
-        '/profile',
-        [ProfileController::class, 'update']
-    )->name('profile.update');
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
 
-    Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
-
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
 
 /*
 |--------------------------------------------------------------------------
-| Internal Image Retention Trigger
+| AUTHENTICATION / REQUEST ACCESS ROUTES
 |--------------------------------------------------------------------------
-|
-| Machine-to-machine endpoint used only by the production retention
-| scheduler. Authentication is performed by RetentionTriggerController
-| using the dedicated retention secret.
-|
 */
 
-Route::post(
-    '/internal/retention/purge',
-    RetentionTriggerController::class
-)
-    ->withoutMiddleware([
-        ValidateCsrfToken::class,
-    ])
-    ->middleware('throttle:retention-trigger')
-    ->name('internal.retention.purge');
+require __DIR__.'/auth.php';

@@ -1,274 +1,197 @@
-<header class="border-b border-[#334155] bg-[#0f172a]">
+@php
+    $user = auth()->user();
 
-    {{-- ============================================================= --}}
-    {{-- TOP HEADER                                                    --}}
-    {{-- ============================================================= --}}
+    /*
+    |--------------------------------------------------------------------------
+    | Brand destination
+    |--------------------------------------------------------------------------
+    | Guest  -> homepage
+    | Doctor -> homepage
+    | Others -> history if available
+    */
+    if (!$user) {
+        $brandUrl = url('/');
+    } elseif (
+        method_exists($user, 'hasRole') &&
+        $user->hasRole('doctor')
+    ) {
+        $brandUrl = Route::has('welcome')
+            ? route('welcome')
+            : url('/');
+    } else {
+        $brandUrl = Route::has('history')
+            ? route('history')
+            : (Route::has('dashboard')
+                ? route('dashboard')
+                : url('/'));
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Role label
+    |--------------------------------------------------------------------------
+    */
+    $roleLabel = '';
+
+    if ($user && method_exists($user, 'hasRole')) {
+        if ($user->hasRole('admin')) {
+            $roleLabel = 'ADMINISTRATOR';
+        } elseif ($user->hasRole('doctor')) {
+            $roleLabel = 'DOCTOR';
+        } else {
+            $roleLabel = 'USER';
+        }
+    }
+@endphp
+
+
+<header
+    class="w-full border-b"
+    style="
+        background-color: #0f172a;
+        border-color: #1e293b;
+    "
+>
     <div
-        class="mx-auto flex w-full max-w-7xl
-               items-center justify-between
-               gap-5 px-5 py-4
-               sm:px-6"
+        class="mx-auto flex min-h-[80px] items-center justify-between px-6"
+        style="max-width: 1400px;"
     >
 
-        {{-- ========================================================= --}}
-        {{-- RETINA BRAND                                              --}}
-        {{-- ========================================================= --}}
-
+        {{-- ============================================================
+            RETINA BRAND
+        ============================================================ --}}
         <a
-            href="{{ auth()->user()->hasRole('doctor') ? route('welcome') : route('history') }}"
+            href="{{ $brandUrl }}"
             class="flex min-w-0 items-center gap-3"
         >
 
+            {{-- RETINA LOGO --}}
             <img
                 src="{{ asset('images/retina-logo.png') }}"
                 alt="RETINA Logo"
-                class="w-16 shrink-0 object-contain
-                       sm:w-20"
+                class="h-14 w-auto shrink-0 object-contain"
             >
 
-
+            {{-- RETINA NAME --}}
             <div class="min-w-0">
 
                 <div
-                    class="text-lg font-extrabold
-                           tracking-[0.22em]
-                           text-[#f1f5f9]"
+                    class="text-xl font-bold tracking-[0.18em]"
+                    style="color: #f8fafc;"
                 >
                     RETINA
                 </div>
 
-
                 <div
-                    class="hidden text-xs
-                           text-[#94a3b8]
-                           sm:block"
+                    class="mt-1 text-xs sm:text-sm"
+                    style="color: #60a5fa;"
                 >
                     Diabetic Retinopathy Detection System
                 </div>
 
             </div>
-
         </a>
 
 
+        {{-- ============================================================
+            RIGHT SIDE
+        ============================================================ --}}
+        <div class="flex items-center gap-4">
 
-        {{-- ========================================================= --}}
-        {{-- USER / LOGOUT                                             --}}
-        {{-- ========================================================= --}}
+            {{-- ========================================================
+                LOGGED-IN USER
+            ======================================================== --}}
+            @auth
 
-        <div
-            class="flex shrink-0
-                   items-center gap-4"
-        >
+                <div class="hidden text-right sm:block">
 
-            <div class="hidden text-right sm:block">
+                    {{-- USER NAME --}}
+                    <div
+                        class="text-sm font-semibold"
+                        style="color: #f1f5f9;"
+                    >
+                        {{ auth()->user()->name }}
+                    </div>
 
-                <div
-                    class="text-sm font-semibold
-                           text-[#f1f5f9]"
-                >
-                    {{ auth()->user()->name }}
+                    {{-- ROLE --}}
+                    <div
+                        class="mt-1 text-[10px] uppercase tracking-[0.14em]"
+                        style="color: #64748b;"
+                    >
+                        {{ $roleLabel }}
+                    </div>
+
                 </div>
 
 
-                <div
-                    class="text-[10px] uppercase
-                           tracking-[0.14em]
-                           text-[#64748b]"
-                >
-                    {{ auth()->user()->hasRole('admin')
-                        ? 'Administrator'
-                        : 'Doctor'
-                    }}
-                </div>
+                {{-- LOGOUT BUTTON --}}
+                @if(Route::has('logout'))
 
-            </div>
+                    <form
+                        method="POST"
+                        action="{{ route('logout') }}"
+                    >
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="
+                                rounded-lg
+                                border
+                                px-4
+                                py-2
+                                text-sm
+                                font-semibold
+                                transition
+                                duration-150
+                            "
+                            style="
+                                color: #e2e8f0;
+                                border-color: #475569;
+                                background-color: #172033;
+                            "
+                        >
+                            Log out
+                        </button>
+
+                    </form>
+
+                @endif
 
 
-            <form
-                method="POST"
-                action="{{ route('logout') }}"
-            >
+            {{-- ========================================================
+                GUEST
+            ======================================================== --}}
+            @else
 
-                @csrf
+                @if(Route::has('login'))
 
+                    <a
+                        href="{{ route('login') }}"
+                        class="
+                            rounded-lg
+                            border
+                            px-4
+                            py-2
+                            text-sm
+                            font-semibold
+                            transition
+                            duration-150
+                        "
+                        style="
+                            color: #e2e8f0;
+                            border-color: #475569;
+                            background-color: #172033;
+                        "
+                    >
+                        Log in
+                    </a>
 
-                <button
-                    type="submit"
-                    class="rounded-lg
-                           border border-[#475569]
-                           bg-[#1e293b]
-                           px-4 py-2
-                           text-sm font-semibold
-                           text-[#cbd5e1]
-                           transition
-                           hover:border-[#64748b]
-                           hover:bg-[#334155]
-                           hover:text-[#f1f5f9]"
-                >
-                    Log out
-                </button>
+                @endif
 
-            </form>
+            @endauth
 
         </div>
 
     </div>
-
-
-
-    {{-- ============================================================= --}}
-    {{-- MAIN NAVIGATION                                               --}}
-    {{-- ============================================================= --}}
-
-    <div class="bg-[#1e293b]">
-
-        <nav
-            class="mx-auto flex w-full max-w-7xl
-                   flex-wrap items-center
-                   gap-2 px-5 py-3
-                   sm:px-6"
-        >
-
-            {{-- ===================================================== --}}
-            {{-- DOCTOR NAVIGATION                                     --}}
-            {{-- ===================================================== --}}
-
-            @role('doctor')
-
-                {{-- OVERVIEW --}}
-                <a
-                    href="{{ route('welcome') }}"
-                    class="
-                        rounded-lg border
-                        px-4 py-2
-                        text-sm font-semibold
-                        transition
-
-                        {{ request()->routeIs('welcome')
-                            ? 'border-[#64748b] bg-[#334155] text-[#f1f5f9]'
-                            : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
-                        }}
-                    "
-                >
-                    Overview
-                </a>
-
-
-                {{-- SCREENING --}}
-                <a
-                    href="{{ route('screening') }}"
-                    class="
-                        rounded-lg border
-                        px-4 py-2
-                        text-sm font-semibold
-                        transition
-
-                        {{ request()->routeIs('screening')
-                            ? 'border-[#64748b] bg-[#334155] text-[#f1f5f9]'
-                            : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
-                        }}
-                    "
-                >
-                    Screening
-                </a>
-{{-- FORMAL EVALUATION --}}
-                <a
-                    href="{{ route('evaluation') }}"
-                    class="
-                        rounded-lg border
-                        px-4 py-2
-                        text-sm font-semibold
-                        transition
-
-                        {{ request()->routeIs('evaluation')
-                            ? 'border-[#2dd4bf] bg-[#134e4a]/40 text-[#5eead4]'
-                            : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
-                        }}
-                    "
-                >
-                    Evaluation
-                </a>
-
-            @endrole
-
-
-
-            {{-- ===================================================== --}}
-            {{-- ADMIN ACCESS REQUESTS                                  --}}
-            {{-- ===================================================== --}}
-
-            @role('admin')
-
-                <a
-                    href="{{ route('admin.access-requests.index') }}"
-                    class="
-                        rounded-lg border
-                        px-4 py-2
-                        text-sm font-semibold
-                        transition
-
-                        {{ request()->routeIs('admin.access-requests.*')
-                            ? 'border-[#2dd4bf] bg-[#134e4a]/40 text-[#5eead4]'
-                            : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
-                        }}
-                    "
-                >
-                    Access Requests
-                </a>
-
-            @endrole
-
-
-
-            {{-- ===================================================== --}}
-            {{-- PREDICTION HISTORY                                    --}}
-            {{-- ===================================================== --}}
-
-            <a
-                href="{{ route('history') }}"
-                class="
-                    rounded-lg border
-                    px-4 py-2
-                    text-sm font-semibold
-                    transition
-
-                    {{ request()->routeIs('history')
-                        || request()->routeIs('predictions.*')
-                            ? 'border-[#64748b] bg-[#334155] text-[#f1f5f9]'
-                            : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
-                    }}
-                "
-            >
-                Prediction History
-            </a>
-
-
-
-            {{-- ===================================================== --}}
-            {{-- MOBILE APP                                            --}}
-            {{-- ===================================================== --}}
-
-            <a
-                href="{{ route('mobile-app') }}"
-                class="
-                    rounded-lg border
-                    px-4 py-2
-                    text-sm font-semibold
-                    transition
-
-                    {{ request()->routeIs('mobile-app*')
-                        ? 'border-[#64748b] bg-[#334155] text-[#f1f5f9]'
-                        : 'border-[#334155] bg-[#0f172a] text-[#94a3b8] hover:border-[#64748b] hover:bg-[#172033] hover:text-[#f1f5f9]'
-                    }}
-                "
-            >
-                Mobile App
-            </a>
-
-        </nav>
-
-    </div>
-
 </header>

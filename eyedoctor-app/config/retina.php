@@ -43,7 +43,7 @@ return [
 
         'apk_path' => env(
             'RETINA_APK_PATH',
-            'releases/retina-latest.apk'
+            'releases/android/RETINA-v1.0.0-Research-Prototype.apk'
         ),
 
         'download_name' => env(
@@ -53,4 +53,33 @@ return [
 
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETINA Windows Application
+    |--------------------------------------------------------------------------
+    |
+    | The Windows release uses an externally configured HTTPS download
+    | link. If no URL is configured, the website safely shows the
+    | Windows release as unavailable.
+    |
+    */
+
+    'windows' => [
+
+        'version' => env(
+            'RETINA_WINDOWS_VERSION'
+        ),
+
+        'package_path' => env(
+            'RETINA_WINDOWS_PATH',
+            'releases/windows/RETINA_WINDOWS_FINAL.zip'
+        ),
+
+        'download_name' => env(
+            'RETINA_WINDOWS_DOWNLOAD_NAME',
+            'RETINA_WINDOWS_FINAL.zip'
+        ),
+
+    ],
 ];

@@ -772,6 +772,325 @@
 
 
         {{-- ========================================================= --}}
+        {{-- WINDOWS DESKTOP APPLICATION                              --}}
+        {{-- ========================================================= --}}
+
+        <section
+            class="mt-6 rounded-2xl
+                   border border-[#334155]
+                   bg-[#0f172a]
+                   p-6
+                   shadow-xl shadow-black/10
+                   sm:p-8"
+        >
+
+            <div
+                class="flex flex-col gap-6
+                       sm:flex-row
+                       sm:items-start
+                       sm:justify-between"
+            >
+
+                <div>
+
+                    <div
+                        class="flex h-14 w-14
+                               items-center justify-center
+                               rounded-xl
+                               border border-[#334155]
+                               bg-[#1e293b]
+                               text-[#cbd5e1]"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            class="h-7 w-7"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="3"
+                                y="4"
+                                width="18"
+                                height="13"
+                                rx="1.5"
+                            />
+
+                            <path d="M8 21h8" />
+                            <path d="M12 17v4" />
+
+                        </svg>
+
+                    </div>
+
+
+                    <h2
+                        class="mt-5
+                               text-xl font-bold
+                               text-[#f1f5f9]"
+                    >
+                        RETINA for Windows
+                    </h2>
+
+
+                    <p
+                        class="mt-2 max-w-2xl
+                               text-sm leading-6
+                               text-[#94a3b8]"
+                    >
+                        Download the Windows desktop release of RETINA for
+                        approved professional and research use. The Windows
+                        release is distributed as a ZIP package.
+                    </p>
+
+                </div>
+
+
+                @if ($windowsAvailable)
+
+                    <span
+                        class="inline-flex w-fit
+                               items-center gap-2
+                               rounded-full
+                               border border-emerald-800
+                               bg-emerald-950/30
+                               px-3 py-1.5
+                               text-xs font-semibold
+                               text-emerald-300"
+                    >
+
+                        <span
+                            class="h-2 w-2
+                                   rounded-full
+                                   bg-emerald-400"
+                        >
+                        </span>
+
+                        Available
+
+                    </span>
+
+                @else
+
+                    <span
+                        class="inline-flex w-fit
+                               items-center gap-2
+                               rounded-full
+                               border border-[#475569]
+                               bg-[#1e293b]
+                               px-3 py-1.5
+                               text-xs font-semibold
+                               text-[#94a3b8]"
+                    >
+
+                        <span
+                            class="h-2 w-2
+                                   rounded-full
+                                   bg-[#64748b]"
+                        >
+                        </span>
+
+                        Pending Release
+
+                    </span>
+
+                @endif
+
+            </div>
+
+
+            {{-- ===================================================== --}}
+            {{-- WINDOWS INFORMATION                                   --}}
+            {{-- ===================================================== --}}
+
+            <div
+                class="mt-7 grid
+                       grid-cols-1 gap-3
+                       sm:grid-cols-3"
+            >
+
+                <div
+                    class="rounded-xl
+                           border border-[#334155]
+                           bg-[#1e293b]
+                           p-4"
+                >
+
+                    <div
+                        class="text-[10px]
+                               font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Version
+                    </div>
+
+                    <div
+                        class="mt-1
+                               text-sm font-semibold
+                               text-[#cbd5e1]"
+                    >
+                        {{ $windowsVersion ?: 'Research prototype' }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="rounded-xl
+                           border border-[#334155]
+                           bg-[#1e293b]
+                           p-4"
+                >
+
+                    <div
+                        class="text-[10px]
+                               font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Platform
+                    </div>
+
+                    <div
+                        class="mt-1
+                               text-sm font-semibold
+                               text-[#cbd5e1]"
+                    >
+                        Windows
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="rounded-xl
+                           border border-[#334155]
+                           bg-[#1e293b]
+                           p-4"
+                >
+
+                    <div
+                        class="text-[10px]
+                               font-semibold uppercase
+                               tracking-widest
+                               text-[#64748b]"
+                    >
+                        Package
+                    </div>
+
+                    <div
+                        class="mt-1
+                               text-sm font-semibold
+                               text-[#cbd5e1]"
+                    >
+                        ZIP
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- ===================================================== --}}
+            {{-- WINDOWS DOWNLOAD                                      --}}
+            {{-- ===================================================== --}}
+
+            <div
+                class="mt-7
+                       border-t border-[#334155]
+                       pt-6"
+            >
+
+                @if ($windowsAvailable)
+
+                    <a
+                        href="{{ route('mobile-app.download.windows') }}"
+                        class="inline-flex w-full
+                               items-center justify-center
+                               gap-2 rounded-lg
+                               border border-[#64748b]
+                               bg-[#334155]
+                               px-5 py-3
+                               text-sm font-bold
+                               text-[#f1f5f9]
+                               shadow-sm
+                               transition
+                               hover:bg-[#475569]
+                               focus:outline-none
+                               focus:ring-2
+                               focus:ring-[#94a3b8]
+                               focus:ring-offset-2
+                               focus:ring-offset-[#0f172a]
+                               sm:w-auto"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+
+                            <path d="M12 3v12" />
+                            <path d="m7 10 5 5 5-5" />
+                            <path d="M5 21h14" />
+
+                        </svg>
+
+                        Download Windows App
+
+                    </a>
+
+                @else
+
+                    <button
+                        type="button"
+                        disabled
+                        class="inline-flex w-full
+                               cursor-not-allowed
+                               items-center justify-center
+                               gap-2 rounded-lg
+                               border border-[#334155]
+                               bg-[#1e293b]
+                               px-5 py-3
+                               text-sm font-semibold
+                               text-[#64748b]
+                               sm:w-auto"
+                    >
+
+                        Windows Package Not Yet Available
+
+                    </button>
+
+                @endif
+
+
+                <p
+                    class="mt-3
+                           text-xs leading-5
+                           text-[#64748b]"
+                >
+                    Download the ZIP package, extract it completely, and
+                    launch RETINA from the extracted Windows application
+                    folder. RETINA remains a research prototype and clinical
+                    decision-support tool.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        {{-- ========================================================= --}}
         {{-- AUTHORIZED DISTRIBUTION NOTICE                            --}}
         {{-- ========================================================= --}}
 
