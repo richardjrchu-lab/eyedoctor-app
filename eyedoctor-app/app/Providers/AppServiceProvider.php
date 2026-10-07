@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Services\ClientIpResolver;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -87,6 +89,41 @@ class AppServiceProvider extends ServiceProvider
                         ?? $request->ip()
                     )
                 )
+        );
+
+        /*
+         * RETINA-branded password-reset email.
+         *
+         * Only the message presentation changes. Token creation, expiry,
+         * storage, and verification remain with Laravel's password broker,
+         * and the reset URL is built exactly as the framework builds it.
+         */
+        ResetPassword::toMailUsing(
+            function (object $notifiable, string $token): MailMessage {
+                $resetUrl = url(route('password.reset', [
+                    'token' => $token,
+                    'email' => $notifiable->getEmailForPasswordReset(),
+                ], false));
+
+                $expiresMinutes = (int) config(
+                    'auth.passwords.'.config('auth.defaults.passwords').'.expire'
+                );
+
+                return (new MailMessage)
+                    ->from(config('mail.from.address'), 'RETINA')
+                    ->subject('Reset your RETINA password')
+                    ->view(
+                        [
+                            'html' => 'emails.password-reset',
+                            'text' => 'emails.password-reset-text',
+                        ],
+                        [
+                            'recipientName' => $notifiable->name,
+                            'resetUrl' => $resetUrl,
+                            'expiresMinutes' => $expiresMinutes,
+                        ]
+                    );
+            }
         );
 
         /*

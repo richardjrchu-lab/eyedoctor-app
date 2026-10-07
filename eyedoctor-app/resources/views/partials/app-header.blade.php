@@ -54,7 +54,7 @@
 
 
         {{-- ========================================================= --}}
-        {{-- USER / LOGOUT                                             --}}
+        {{-- USER / PROFILE / LOGOUT                                   --}}
         {{-- ========================================================= --}}
 
         <div
@@ -62,30 +62,73 @@
                    items-center gap-4"
         >
 
-            <div class="hidden text-right sm:block">
+            {{-- USER PROFILE LINK --}}
+            <a
+                href="{{ route('profile.edit') }}"
+                class="flex items-center gap-3
+                       rounded-lg border
+                       px-3 py-2
+                       text-right
+                       transition
+                       focus:outline-none
+                       focus-visible:ring-2
+                       focus-visible:ring-[#38bdf8]
 
-                <div
-                    class="text-sm font-semibold
-                           text-[#f1f5f9]"
-                >
-                    {{ auth()->user()->name }}
+                       {{ request()->routeIs('profile.*')
+                           ? 'border-[#475569] bg-[#1e293b]'
+                           : 'border-transparent hover:border-[#334155] hover:bg-[#1e293b]'
+                       }}"
+                title="Account Profile"
+                aria-label="Account profile for {{ auth()->user()->name }}"
+                @if (request()->routeIs('profile.*'))
+                    aria-current="page"
+                @endif
+            >
+
+                <div class="hidden sm:block">
+
+                    <div
+                        class="text-sm font-semibold
+                               text-[#f1f5f9]"
+                    >
+                        {{ auth()->user()->name }}
+                    </div>
+
+
+                    <div
+                        class="text-[10px] uppercase
+                               tracking-[0.14em]
+                               text-[#64748b]"
+                    >
+                        {{ auth()->user()->hasRole('admin')
+                            ? 'Administrator'
+                            : 'Doctor'
+                        }}
+                    </div>
+
                 </div>
 
 
-                <div
-                    class="text-[10px] uppercase
-                           tracking-[0.14em]
-                           text-[#64748b]"
+                {{-- Compact account icon for narrow screens --}}
+                <svg
+                    viewBox="0 0 24 24"
+                    class="h-5 w-5 text-[#94a3b8]
+                           sm:hidden"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
                 >
-                    {{ auth()->user()->hasRole('admin')
-                        ? 'Administrator'
-                        : 'Doctor'
-                    }}
-                </div>
+                    <circle cx="12" cy="8" r="3.5" />
+                    <path d="M5 20c1.2-3.6 3.9-5.5 7-5.5s5.8 1.9 7 5.5" />
+                </svg>
 
-            </div>
+            </a>
 
 
+            {{-- LOGOUT --}}
             <form
                 method="POST"
                 action="{{ route('logout') }}"
@@ -173,7 +216,9 @@
                 >
                     Screening
                 </a>
-{{-- FORMAL EVALUATION --}}
+
+
+                {{-- FORMAL EVALUATION --}}
                 <a
                     href="{{ route('evaluation') }}"
                     class="
@@ -196,7 +241,7 @@
 
 
             {{-- ===================================================== --}}
-            {{-- ADMIN ACCESS REQUESTS                                  --}}
+            {{-- ADMIN ACCESS REQUESTS                                 --}}
             {{-- ===================================================== --}}
 
             @role('admin')
