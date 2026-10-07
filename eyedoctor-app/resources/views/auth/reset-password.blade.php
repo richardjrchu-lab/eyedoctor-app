@@ -25,7 +25,7 @@
                        tracking-[0.14em]
                        text-[#2dd4bf]"
             >
-                Secure Account Setup
+                Secure Password Reset
             </div>
 
 
@@ -34,18 +34,21 @@
                        tracking-tight
                        text-[#f1f5f9]"
             >
-                Create your RETINA password
+                Reset Password
             </h2>
 
 
+            {{-- This page also serves the first-time setup link sent
+                 when an administrator approves an access request. --}}
             <p
                 class="mt-2
                        text-sm
                        leading-6
                        text-[#94a3b8]"
             >
-                Choose a secure password for your approved
-                professional account.
+                Choose a new password for your RETINA account.
+                Newly approved users also use this page to set
+                their first password.
             </p>
 
         </div>
@@ -126,28 +129,36 @@
                     </div>
 
 
+                    {{-- Read-only only when the reset link supplied the
+                         address; otherwise the user must be able to type it. --}}
+                    @php($emailFromLink = filled($request->email))
+
                     <input
                         id="email"
                         name="email"
                         type="email"
                         value="{{ old('email', $request->email) }}"
                         required
-                        readonly
+                        @if ($emailFromLink)
+                            readonly
+                        @else
+                            autofocus
+                        @endif
                         autocomplete="username"
                         class="block w-full
-                               cursor-not-allowed
                                rounded-lg
                                border border-[#475569]
                                bg-[#0f172a]
                                py-2.5
                                pl-11 pr-4
                                text-sm
-                               text-[#cbd5e1]
-                               opacity-90
-                               focus:border-[#64748b]
                                focus:outline-none
                                focus:ring-1
-                               focus:ring-[#64748b]"
+
+                               {{ $emailFromLink
+                                   ? 'cursor-not-allowed text-[#cbd5e1] opacity-90 focus:border-[#64748b] focus:ring-[#64748b]'
+                                   : 'text-[#f1f5f9] placeholder:text-[#64748b] focus:border-[#94a3b8] focus:ring-[#94a3b8]'
+                               }}"
                     >
 
                 </div>
@@ -221,6 +232,7 @@
                     <input
                         id="password"
                         name="password"
+                        type="password"
                         :type="showPassword ? 'text' : 'password'"
                         required
                         autocomplete="new-password"
@@ -378,6 +390,7 @@
                     <input
                         id="password_confirmation"
                         name="password_confirmation"
+                        type="password"
                         :type="
                             showConfirmation
                                 ? 'text'
@@ -511,8 +524,8 @@
                            text-[#94a3b8]"
                 >
                     Use a strong password that you do not reuse
-                    for other services. This setup link can only
-                    be used while its secure token remains valid.
+                    for other services. This link can only be used
+                    once, while its secure token remains valid.
                 </p>
 
             </div>
@@ -545,10 +558,37 @@
                        focus:ring-offset-2
                        focus:ring-offset-[#1e293b]"
             >
-                SET RETINA PASSWORD
+                Reset Password
             </button>
 
         </form>
+
+
+
+        {{-- ========================================================= --}}
+        {{-- BACK TO LOGIN                                             --}}
+        {{-- ========================================================= --}}
+
+        <div
+            class="mt-6 border-t border-[#334155]
+                   pt-5 text-center"
+        >
+
+            <a
+                href="{{ route('login') }}"
+                class="text-sm text-[#94a3b8]
+                       underline-offset-4
+                       transition
+                       hover:text-[#f1f5f9]
+                       hover:underline
+                       focus:outline-none
+                       focus-visible:text-[#f1f5f9]
+                       focus-visible:underline"
+            >
+                Back to Login
+            </a>
+
+        </div>
 
     </div>
 
