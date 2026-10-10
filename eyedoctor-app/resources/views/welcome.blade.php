@@ -877,10 +877,8 @@
                                font-mono
                                mt-2 leading-relaxed"
                     >
-                        Mild NPDR precision on the locked test set was
-                        approximately 55%. Interpret Mild-class predictions
-                        together with the probability distribution, referral
-                        result, and clinical assessment.
+                        Interpret the class probability distribution together
+                        with the referral result and clinical assessment.
                     </p>
 
                 </div>
