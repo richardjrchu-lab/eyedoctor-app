@@ -609,6 +609,7 @@
                 <div class="mb-4">
 
                     <span
+                        id="stage-label"
                         class="text-[10px]
                                font-mono
                                text-slate-500
@@ -1152,8 +1153,8 @@
                            items-center"
                 >
 
-                    <span>
-                        Model: EfficientNetB4 + TTA
+                    <span id="model-val">
+                        Classification: Not performed
                     </span>
 
 
@@ -1164,7 +1165,7 @@
                             id="conf-val"
                             class="text-slate-300"
                         >
-                            0%
+                            N/A
                         </strong>
                     </span>
 
@@ -1290,6 +1291,11 @@
         let activeImage = new Image();
 
         let currentPredictionId = null;
+
+        // Last successful B4 result on this page. Clinician override
+        // selections never modify it, so the footer always reports the
+        // model's own output (or that classification was not performed).
+        let modelResult = null;
 
 
         // ================================================================
@@ -1773,6 +1779,9 @@
                 .remove('hidden');
 
 
+            clearPredictionResultState();
+
+
             startLoader();
 
 
@@ -1905,16 +1914,23 @@
 
 
 
+                modelResult = {
+                    label: data.predicted_label,
+                    confidencePct: confidencePct
+                };
+
+
                 setUIDiagnosis(
 
                     stageIndex,
 
                     `Classified as ${data.predicted_label} with ${confidencePct}% confidence. `
-                    + `Review the probability distribution below before confirming.`,
-
-                    confidencePct
+                    + `Review the probability distribution below before confirming.`
 
                 );
+
+
+                renderModelFooter();
 
 
 
@@ -2112,17 +2128,15 @@
                     .remove('hidden');
 
 
-                document
-                    .getElementById('referral-box')
-                    .classList
-                    .add('hidden');
+                // Also covers a failure thrown while rendering a success,
+                // so no partially rendered result can remain visible.
+                clearPredictionResultState();
 
 
                 setUIDiagnosis(
                     "invalid",
                     err.message
-                        || "Could not reach the model server.",
-                    0
+                        || "Could not reach the model server."
                 );
 
             });
@@ -2334,11 +2348,18 @@
         // SET DIAGNOSIS UI
         // ================================================================
 
+        // Updates the displayed stage and description only. The model
+        // footer is rendered separately from modelResult, so a clinician
+        // selection can never alter the reported model confidence.
         function setUIDiagnosis(
             stage,
             desc,
-            confidence
+            source = "model"
         ) {
+
+            const stageLabel =
+                document.getElementById('stage-label');
+
 
             const stageBadge =
                 document.getElementById('stage-badge');
@@ -2348,12 +2369,15 @@
                 document.getElementById('desc-box');
 
 
-            const confVal =
-                document.getElementById('conf-val');
-
-
             const doctorSelect =
                 document.getElementById('doctor-override');
+
+
+
+            stageLabel.innerText =
+                source === "clinician"
+                    ? "Clinician-Selected Stage:"
+                    : "Predicted ICDR Stage:";
 
 
 
@@ -2399,9 +2423,137 @@
             descBox.innerText =
                 desc;
 
+        }
 
-            confVal.innerText =
-                (confidence || 0) + "%";
+
+
+        // ================================================================
+        // MODEL FOOTER
+        // ================================================================
+
+        // With no successful B4 result (before upload, rejected upload,
+        // safety stop, or server error), classification was not performed.
+        function renderModelFooter() {
+
+            const modelVal =
+                document.getElementById('model-val');
+
+
+            const confVal =
+                document.getElementById('conf-val');
+
+
+
+            if (modelResult === null) {
+
+                modelVal.innerText =
+                    "Classification: Not performed";
+
+
+                confVal.innerText =
+                    "N/A";
+
+            } else {
+
+                modelVal.innerText =
+                    "Model: EfficientNetB4 + TTA";
+
+
+                confVal.innerText =
+                    modelResult.confidencePct + "%";
+
+            }
+
+        }
+
+
+
+        // ================================================================
+        // CLEAR PREVIOUS PREDICTION
+        // ================================================================
+
+        // Removes every model-derived output left by an earlier upload so a
+        // new attempt, and especially a rejected one, never displays results
+        // that belong to a different image. The image preview is untouched.
+        function clearPredictionResultState() {
+
+            modelResult =
+                null;
+
+
+            currentPredictionId =
+                null;
+
+
+
+            [
+                'referral-box',
+                'review-flag',
+                'atypical-flag',
+                'scope-warning',
+                'probability-panel',
+                'doctor-panel',
+                'correction-status'
+            ].forEach(id =>
+                document
+                    .getElementById(id)
+                    .classList
+                    .add('hidden')
+            );
+
+
+
+            document
+                .getElementById('prob-bars')
+                .innerHTML =
+                "";
+
+
+            document
+                .getElementById('latency-val')
+                .innerText =
+                "—";
+
+
+            document
+                .getElementById('correction-status')
+                .innerText =
+                "";
+
+
+            document
+                .getElementById('correction-note')
+                .value =
+                "";
+
+
+
+            document
+                .getElementById('stage-label')
+                .innerText =
+                "Predicted ICDR Stage:";
+
+
+            const stageBadge =
+                document.getElementById('stage-badge');
+
+
+            stageBadge.innerText =
+                "Awaiting Result...";
+
+
+            stageBadge.className =
+                "text-sm font-bold font-mono text-slate-300 bg-slate-800 p-3 rounded-lg border border-slate-700";
+
+
+            document
+                .getElementById('desc-box')
+                .innerText =
+                "Analyzing the uploaded image.";
+
+
+
+            renderModelFooter();
 
         }
 
@@ -2411,22 +2563,35 @@
         // MANUAL DIAGNOSIS OVERRIDE
         // ================================================================
 
+        // Clinician selections change only the displayed stage. The model
+        // result, probabilities, referral decision, and footer are untouched.
         function overrideDiagnosis(val) {
+
+            const modelSummary =
+                modelResult
+                    ? `The model result (${modelResult.label}, ${modelResult.confidencePct}% confidence) is unchanged.`
+                    : "No model result is available.";
+
+
 
             if (val === "invalid") {
 
                 setUIDiagnosis(
                     "invalid",
-                    "Manually marked as unidentifiable by reviewing clinician.",
-                    0
+                    "Clinician selection: Cannot Determine Stage. "
+                    + "This selection cannot be saved as a correction. "
+                    + modelSummary,
+                    "clinician"
                 );
 
             } else {
 
                 setUIDiagnosis(
                     parseInt(val),
-                    "Clinician override applied \u2014 this supersedes the model prediction.",
-                    100
+                    `Clinician selection: ${stagesList[parseInt(val)]}. `
+                    + "Save the correction below to record it. "
+                    + modelSummary,
+                    "clinician"
                 );
 
             }
