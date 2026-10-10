@@ -34,13 +34,15 @@ class AccessRequestController extends Controller
     private const PROOF_DISK = 'professional_verifications';
 
     /**
-     * Versions stored with every consent record.
+     * Version stored with every appropriate-use consent record.
      *
-     * If either notice changes materially, increment its version before
+     * If the notice changes materially, increment its version before
      * accepting submissions under the revised text.
+     *
+     * The privacy acknowledgement instead records the canonical Privacy
+     * Notice version from config/legal.php, so applicants and account
+     * holders always reference the same notice identity.
      */
-    private const PRIVACY_NOTICE_VERSION = '2026-09-v1';
-
     private const APPROPRIATE_USE_NOTICE_VERSION = '2026-09-v1';
 
     /**
@@ -90,6 +92,19 @@ class AccessRequestController extends Controller
         StoreAccessRequestRequest $request
     ): RedirectResponse {
         $validated = $request->validated();
+
+        /*
+         * Fail closed before any upload or database work if the canonical
+         * Privacy Notice version is missing, rather than recording an
+         * acknowledgement of an unidentified notice.
+         */
+        if ($this->privacyNoticeVersion() === '') {
+            Log::critical(
+                'Privacy Notice version is not configured; access request refused.'
+            );
+
+            return $this->processingFailureResponse();
+        }
 
         /*
          * Turnstile is validated on the server before database queries,
@@ -225,7 +240,7 @@ class AccessRequestController extends Controller
                         self::PROOF_DISK,
 
                     privacyNoticeVersion:
-                        self::PRIVACY_NOTICE_VERSION,
+                        $this->privacyNoticeVersion(),
 
                     appropriateUseNoticeVersion:
                         self::APPROPRIATE_USE_NOTICE_VERSION
@@ -516,6 +531,15 @@ class AccessRequestController extends Controller
      * We deliberately do NOT call withInput(). In particular, professional
      * registration numbers must not be flashed into the session.
      */
+    /**
+     * Canonical Privacy Notice version shared with the account-holder legal
+     * acknowledgement flow (config/legal.php).
+     */
+    private function privacyNoticeVersion(): string
+    {
+        return trim((string) config('legal.privacy_version'));
+    }
+
     private function processingFailureResponse(
         string $field = 'submission'
     ): RedirectResponse {

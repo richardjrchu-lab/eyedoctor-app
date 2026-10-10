@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Prediction History â€” RETINA</title>
+    <title>Prediction History &mdash; RETINA</title>
 
     @vite([
         'resources/css/app.css',
@@ -85,7 +85,7 @@
                                uppercase tracking-wider
                                text-amber-300"
                     >
-                        Administrator View â€” All Doctors
+                        Administrator View &mdash; All Doctors
                     </div>
 
                 @endrole
@@ -422,7 +422,7 @@
                                                text-xs
                                                text-[#64748b]"
                                     >
-                                        Model service error â€” no classification recorded
+                                        Model service error &mdash; no classification recorded
                                     </span>
 
 
@@ -553,7 +553,7 @@
                 class="text-xs
                        text-[#64748b]"
             >
-                RETINA &mdash; Diabetic Retinopathy Detection System
+                RETINA &mdash; Diabetic Retinopathy Screening Support System
             </p>
 
         </footer>

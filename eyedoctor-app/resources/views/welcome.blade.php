@@ -15,7 +15,7 @@
     <title>
         {{ $evaluationMode
             ? 'RETINA Formal Evaluation'
-            : 'Diabetic Retinopathy Detection System'
+            : 'Diabetic Retinopathy Screening Support System'
         }}
     </title>
 
@@ -388,7 +388,7 @@
                                        text-slate-300
                                        uppercase font-bold"
                             >
-                                Uploaded Fundus Image
+                                Uploaded Image
                             </span>
 
                         </div>
@@ -616,7 +616,7 @@
                                uppercase font-bold
                                block mb-1"
                     >
-                        Predicted ICDR Stage:
+                        Screening Result:
                     </span>
 
 
@@ -1951,21 +1951,27 @@
                     && data.flagged_for_review
                 ) {
 
-                    const anyDrPct =
-                        (
-                            (data.any_dr_probability || 0)
-                            * 100
-                        ).toFixed(1);
+                    // Describe only the observable model-output condition;
+                    // no clinical or causal claim is made here.
+                    const anyDrProbability =
+                        Number(data.any_dr_probability);
+
+
+                    const anyDrText =
+                        data.any_dr_probability != null
+                        && Number.isFinite(anyDrProbability)
+                            ? `the model assigns ${(anyDrProbability * 100).toFixed(1)}% combined probability across the DR stages`
+                            : `the model flagged this result for review`;
 
 
                     document
                         .getElementById('review-flag-text')
                         .innerText =
 
-                        `The model reports No DR, but assigns ${anyDrPct}% combined probability `
-                        + `across the DR stages. Early lesions such as microaneurysms are easily `
-                        + `missed at this image scale. Manual review is recommended before `
-                        + `recording this as a negative screen.`;
+                        `The referral threshold was not met, but ${anyDrText}. `
+                        + `The categorical stage and the model's other outputs indicate that `
+                        + `additional clinician review is appropriate before recording the `
+                        + `screening result.`;
 
 
                     reviewFlag
@@ -2003,10 +2009,9 @@
                         .getElementById('atypical-flag-text')
                         .innerText =
 
-                        `This image is unusual for a fundus photograph (signature score ${score}). `
-                        + `It was graded normally, but atypical images are more often severe or `
-                        + `proliferative cases where haemorrhage alters the colour profile. `
-                        + `Weigh the grade accordingly.`;
+                        `This image is atypical relative to the fundus-image patterns represented `
+                        + `by RETINA (signature score ${score}). Interpret the automated result `
+                        + `cautiously and review the image clinically.`;
 
 
                     atypicalFlag
@@ -2374,17 +2379,23 @@
 
 
 
+            const noStage =
+                stage === "invalid"
+                || stage === undefined;
+
+
+            // Only a real model stage is labelled as an ICDR prediction.
+            // A rejected or safety-stopped upload has no DR classification.
             stageLabel.innerText =
                 source === "clinician"
                     ? "Clinician-Selected Stage:"
-                    : "Predicted ICDR Stage:";
+                    : noStage
+                        ? "Screening Result:"
+                        : "Predicted ICDR Stage:";
 
 
 
-            if (
-                stage === "invalid"
-                || stage === undefined
-            ) {
+            if (noStage) {
 
                 stageBadge.innerText =
                     "Cannot Determine Stage";
@@ -2531,7 +2542,7 @@
             document
                 .getElementById('stage-label')
                 .innerText =
-                "Predicted ICDR Stage:";
+                "Screening Result:";
 
 
             const stageBadge =
@@ -2710,7 +2721,8 @@
                 if (!res.ok) {
 
                     throw new Error(
-                        data.message
+                        data.detail
+                        || data.message
                         || 'Failed to save correction.'
                     );
 

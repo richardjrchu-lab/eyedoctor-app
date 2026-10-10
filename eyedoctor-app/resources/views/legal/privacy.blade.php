@@ -445,6 +445,13 @@
             transform: translateY(1px);
         }
 
+        a.continue-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
         /* =========================================================
            MOBILE
         ========================================================= */
@@ -527,7 +534,7 @@
                     </div>
 
                     <div class="brand-subtitle">
-                        Diabetic Retinopathy Detection System
+                        Diabetic Retinopathy Screening Support System
                     </div>
 
                 </div>
@@ -895,6 +902,53 @@
 
                 </section>
 
+                <section class="section" id="professional-access-requests">
+
+                    <h2>
+                        14. Professional Access Requests
+                    </h2>
+
+                    <p>
+                        If you apply for professional access before you have
+                        a RETINA account, RETINA processes the information
+                        you submit in the access-request form: your name,
+                        email address, profession, institution, department or
+                        position, an optional professional registration
+                        number, and one verification document. RETINA also
+                        records when and under which notice version you gave
+                        the requested acknowledgements, whether your email
+                        address has been verified, and the review decision.
+                    </p>
+
+                    <p>
+                        This information is used to verify your email address
+                        and to evaluate whether to grant access. The
+                        professional registration number is stored in
+                        encrypted form. The verification document is kept in
+                        private storage that is not publicly accessible and is
+                        made available only to RETINA administrators reviewing
+                        your request, through a short-lived access link.
+                    </p>
+
+                    <p>
+                        To protect the form against automated abuse, an
+                        anti-abuse verification service receives technical
+                        information about your request, such as your IP
+                        address. If a rejected request is resubmitted, the
+                        previously uploaded verification document is replaced
+                        and deleted.
+                    </p>
+
+                    <p>
+                        Professional verification documents are retained only
+                        for access-review and related administrative purposes.
+                        A specific retention schedule for these documents is
+                        being established separately from RETINA's
+                        retinal-image retention policy.
+                    </p>
+
+                </section>
+
                 <div class="notice-box">
                     RETINA Web is designed to limit unnecessary identifying
                     information and to use coded information where
@@ -906,7 +960,36 @@
 
             {{-- =====================================================
                  PRIVACY ACKNOWLEDGMENT
+                 The public read-only copy (public.privacy) is shown to
+                 applicants who do not have an account yet, so it has no
+                 acknowledgement form.
             ===================================================== --}}
+
+            @if ($publicView ?? false)
+
+            <div class="acceptance-footer">
+
+                <div class="button-row">
+
+                    <a
+                        href="{{ route('access-request.create') }}"
+                        class="back-button"
+                    >
+                        Request Professional Access
+                    </a>
+
+                    <a
+                        href="{{ route('login') }}"
+                        class="continue-button"
+                    >
+                        Sign In
+                    </a>
+
+                </div>
+
+            </div>
+
+            @else
 
             <form
                 method="POST"
@@ -977,6 +1060,8 @@
                 </div>
 
             </form>
+
+            @endif
 
         </section>
 

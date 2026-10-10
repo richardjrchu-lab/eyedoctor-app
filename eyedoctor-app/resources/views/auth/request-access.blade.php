@@ -960,6 +960,17 @@
                                 used to evaluate my request for access
                                 to RETINA and should contain only the
                                 information necessary for that purpose.
+                                See the
+                                <a
+                                    href="{{ route('public.privacy') }}#professional-access-requests"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="font-semibold
+                                           text-[#5eead4]
+                                           underline
+                                           underline-offset-2
+                                           hover:text-[#99f6e4]"
+                                >RETINA Privacy Notice</a>.
                             </span>
 
                         </span>

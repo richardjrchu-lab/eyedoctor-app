@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prediction #{{ $prediction->id }} — DR Detection System</title>
+    <title>Prediction #{{ $prediction->id }} — DR Screening Support System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-800 text-slate-100 min-h-screen font-mono">
@@ -149,6 +149,7 @@
         @endif
 
         {{-- Referral verdict --}}
+        <p class="text-xs uppercase tracking-widest text-slate-400 -mb-2">Model referral result</p>
         @if ($prediction->referral_flag)
         <div class="border-2 border-red-600 bg-red-950/40 rounded p-4">
             <p class="font-bold text-red-300 tracking-wide">REFER TO SPECIALIST</p>
@@ -198,7 +199,7 @@
 
         {{-- ICDR grade --}}
         <div>
-            <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Predicted ICDR stage</p>
+            <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Model-predicted ICDR stage</p>
             <div class="border-2 rounded p-3 {{ $stageColors[$prediction->predicted_class] ?? 'border-slate-500' }}">
                 {{ $stages[$prediction->predicted_class] ?? 'Unknown' }}
             </div>
@@ -243,7 +244,8 @@
             @endif
             <p class="text-[10px] text-slate-500 mt-3">
                 Corrected by {{ $prediction->correction->correctedBy->name ?? 'Unknown' }}
-                on {{ $prediction->correction->created_at->format('M j, Y g:i A') }}
+                on {{ $prediction->correction->updated_at->format('M j, Y g:i A') }}.
+                The original model result above is retained unchanged.
             </p>
         </div>
         @else
@@ -260,7 +262,7 @@
         <p class="text-[10px] text-red-400 leading-relaxed">
             For clinical decision support only. Predictions must be reviewed by a qualified eye care
             professional and are not a substitute for clinical diagnosis. This is a read-only archive
-            view; corrections are made on the prediction page.
+            view; clinician corrections are recorded on the screening page when a result is reviewed.
         </p>
 
     </section>

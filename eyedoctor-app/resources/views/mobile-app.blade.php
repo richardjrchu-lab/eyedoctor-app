@@ -122,9 +122,10 @@
                        text-[#94a3b8]
                        sm:text-base"
             >
-                Download the approved Android and Windows versions of the RETINA
-                Diabetic Retinopathy Detection System for authorized professional,
-                research, and approved screening workflows.
+                Download the published research-prototype Android and Windows
+                releases of the RETINA Diabetic Retinopathy Clinical
+                Decision-Support System for authorized professional, research,
+                and screening-support workflows.
             </p>
 
         </div>
@@ -251,8 +252,8 @@
                                    text-sm leading-6
                                    text-[#94a3b8]"
                         >
-                            Download the approved Android release of the
-                            RETINA screening application. The installation
+                            Download the published research-prototype Android
+                            release of the RETINA screening application. The installation
                             package is available only to authenticated RETINA
                             users.
                         </p>
@@ -350,7 +351,7 @@
                                    text-sm font-semibold
                                    text-[#cbd5e1]"
                         >
-                            {{ $appVersion ?: 'Not verified' }}
+                            {{ $appVersion ?: 'Not specified' }}
                         </div>
 
                     </div>
@@ -380,7 +381,7 @@
                                    text-sm font-semibold
                                    text-[#cbd5e1]"
                         >
-                            {{ $versionCode ?: 'Not verified' }}
+                            {{ $versionCode ?: 'Not specified' }}
                         </div>
 
                     </div>
@@ -445,7 +446,7 @@
                                font-mono text-sm
                                text-[#cbd5e1]"
                     >
-                        {{ $packageId ?: 'Not verified' }}
+                        {{ $packageId ?: 'Not specified' }}
                     </div>
 
                 </div>
@@ -550,8 +551,9 @@
                     >
                         Authentication is required for every download.
                         The Android installation package is stored in
-                        private application storage and is not exposed
-                        through a public URL.
+                        private application storage and is delivered only
+                        through a short-lived download link issued to
+                        signed-in users.
                     </p>
 
                 </div>
@@ -586,8 +588,8 @@
                            text-xs leading-5
                            text-[#64748b]"
                 >
-                    Follow these steps after the approved release
-                    becomes available.
+                    Follow these steps to install the available Android
+                    release.
                 </p>
 
 
@@ -628,7 +630,7 @@
                                        text-[#64748b]"
                             >
                                 Sign in to your RETINA account and download
-                                the approved Android APK from this page.
+                                the available Android APK from this page.
                             </p>
 
                         </div>
@@ -889,7 +891,7 @@
                         class="mt-1 text-sm font-semibold
                                text-[#cbd5e1]"
                     >
-                        {{ $windowsVersion ?: 'Not verified' }}
+                        {{ $windowsVersion ?: 'Not specified' }}
                     </div>
                 </div>
 
@@ -1112,9 +1114,21 @@
                        text-[#64748b]"
             >
                 RETINA Applications provide Android and Windows implementations of
-                the Diabetic Retinopathy Detection System. They are intended
+                the Diabetic Retinopathy Screening Support System. They are intended
                 to assist authorized users in diabetic retinopathy screening
                 workflows using the RETINA artificial intelligence system.
+            </p>
+
+
+            <p
+                class="mt-3
+                       text-xs leading-6
+                       text-[#64748b]"
+            >
+                The Android and Windows applications are separate
+                implementations from RETINA Web. They share the same
+                diabetic-retinopathy screening objective, but they are not
+                identical, and their interface and behavior may differ.
             </p>
 
 
@@ -1147,7 +1161,7 @@
                        text-[#64748b]"
             >
                 RETINA &mdash;
-                Diabetic Retinopathy Detection System
+                Diabetic Retinopathy Screening Support System
             </p>
 
         </footer>

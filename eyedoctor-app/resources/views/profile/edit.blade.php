@@ -176,7 +176,7 @@
                    pt-5 text-center"
         >
             <p class="text-xs text-[#64748b]">
-                RETINA &mdash; Diabetic Retinopathy Detection System
+                RETINA &mdash; Diabetic Retinopathy Screening Support System
             </p>
         </footer>
 

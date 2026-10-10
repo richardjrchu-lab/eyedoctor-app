@@ -117,7 +117,7 @@
                            text-[#f1f5f9]
                            sm:text-2xl"
                 >
-                    Diabetic Retinopathy Detection System
+                    Diabetic Retinopathy Screening Support System
                 </h1>
 
 
