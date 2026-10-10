@@ -1779,6 +1779,9 @@
                 .remove('hidden');
 
 
+            clearPredictionResultState();
+
+
             startLoader();
 
 
@@ -2125,13 +2128,9 @@
                     .remove('hidden');
 
 
-                document
-                    .getElementById('referral-box')
-                    .classList
-                    .add('hidden');
-
-
-                modelResult = null;
+                // Also covers a failure thrown while rendering a success,
+                // so no partially rendered result can remain visible.
+                clearPredictionResultState();
 
 
                 setUIDiagnosis(
@@ -2139,9 +2138,6 @@
                     err.message
                         || "Could not reach the model server."
                 );
-
-
-                renderModelFooter();
 
             });
 
@@ -2467,6 +2463,97 @@
                     modelResult.confidencePct + "%";
 
             }
+
+        }
+
+
+
+        // ================================================================
+        // CLEAR PREVIOUS PREDICTION
+        // ================================================================
+
+        // Removes every model-derived output left by an earlier upload so a
+        // new attempt, and especially a rejected one, never displays results
+        // that belong to a different image. The image preview is untouched.
+        function clearPredictionResultState() {
+
+            modelResult =
+                null;
+
+
+            currentPredictionId =
+                null;
+
+
+
+            [
+                'referral-box',
+                'review-flag',
+                'atypical-flag',
+                'scope-warning',
+                'probability-panel',
+                'doctor-panel',
+                'correction-status'
+            ].forEach(id =>
+                document
+                    .getElementById(id)
+                    .classList
+                    .add('hidden')
+            );
+
+
+
+            document
+                .getElementById('prob-bars')
+                .innerHTML =
+                "";
+
+
+            document
+                .getElementById('latency-val')
+                .innerText =
+                "—";
+
+
+            document
+                .getElementById('correction-status')
+                .innerText =
+                "";
+
+
+            document
+                .getElementById('correction-note')
+                .value =
+                "";
+
+
+
+            document
+                .getElementById('stage-label')
+                .innerText =
+                "Predicted ICDR Stage:";
+
+
+            const stageBadge =
+                document.getElementById('stage-badge');
+
+
+            stageBadge.innerText =
+                "Awaiting Result...";
+
+
+            stageBadge.className =
+                "text-sm font-bold font-mono text-slate-300 bg-slate-800 p-3 rounded-lg border border-slate-700";
+
+
+            document
+                .getElementById('desc-box')
+                .innerText =
+                "Analyzing the uploaded image.";
+
+
+
+            renderModelFooter();
 
         }
 
