@@ -517,3 +517,78 @@ test('live purge is idempotent after an image has already been purged', function
             ->count()
     )->toBe(1);
 });
+
+
+test('live purge keeps coded research records and only deletes the expired image file', function () {
+    Storage::fake('s3');
+
+    $this->travelTo(
+        Carbon::parse('2029-09-17 10:00:00')
+    );
+
+    $user = User::factory()->create();
+
+    $expired = Image::create([
+        'user_id' => $user->id,
+        'storage_path' => 'uploads/1/research-expired.png',
+        'anonymized_filename' => 'research-expired.png',
+        'validation_status' => 'valid',
+    ]);
+
+    $expired->forceFill([
+        'created_at' => now()->subYear(),
+        'updated_at' => now()->subYear(),
+    ])->save();
+
+    $recent = Image::create([
+        'user_id' => $user->id,
+        'storage_path' => 'uploads/1/research-recent.png',
+        'anonymized_filename' => 'research-recent.png',
+        'validation_status' => 'valid',
+    ]);
+
+    Storage::disk('s3')->put($expired->storage_path, 'expired-image');
+    Storage::disk('s3')->put($recent->storage_path, 'recent-image');
+
+    $prediction = \App\Models\Prediction::create([
+        'image_id' => $expired->id,
+        'predicted_class' => 2,
+        'confidence_score' => 0.80,
+        'probabilities' => [
+            ['label' => 'Moderate NPDR', 'probability' => 0.80],
+        ],
+        'referral_flag' => true,
+        'referable_probability' => 0.80,
+        'flagged_for_review' => false,
+        'atypical_fundus_image' => false,
+        'fundus_signature_score' => 0.90,
+        'gradcam_path' => null,
+        'model_version' => 'retention-research-test-model',
+    ]);
+
+    $correction = \App\Models\Correction::create([
+        'prediction_id' => $prediction->id,
+        'corrected_by' => $user->id,
+        'corrected_class' => 3,
+        'note' => 'Retained research correction.',
+    ]);
+
+    $summary = app(ImageRetentionService::class)
+        ->purgeExpired(
+            dryRun: false,
+            limit: 50
+        );
+
+    expect($summary['purged'])->toBe(1);
+
+    expect(Storage::disk('s3')->exists('uploads/1/research-expired.png'))->toBeFalse()
+        ->and(Storage::disk('s3')->exists('uploads/1/research-recent.png'))->toBeTrue();
+
+    expect($expired->fresh())->not->toBeNull()
+        ->and($expired->fresh()->anonymized_filename)->toBe('research-expired.png')
+        ->and($prediction->fresh())->not->toBeNull()
+        ->and($prediction->fresh()->predicted_class)->toBe(2)
+        ->and($correction->fresh())->not->toBeNull()
+        ->and($correction->fresh()->corrected_class)->toBe(3)
+        ->and($recent->fresh()->retention_purged_at)->toBeNull();
+});

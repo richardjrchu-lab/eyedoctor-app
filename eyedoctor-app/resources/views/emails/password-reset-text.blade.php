@@ -1,5 +1,5 @@
 RETINA
-Diabetic Retinopathy Detection System
+Diabetic Retinopathy Screening Support System
 
 Reset your RETINA password
 
@@ -14,4 +14,4 @@ This password-reset link expires in {{ $expiresMinutes }} {{ $expiresMinutes ===
 If you did not request a password reset, no further action is required. Your current password will keep working.
 
 --
-RETINA | Diabetic Retinopathy Detection System
+RETINA | Diabetic Retinopathy Screening Support System

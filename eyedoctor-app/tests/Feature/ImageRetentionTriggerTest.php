@@ -240,3 +240,51 @@ test('retention trigger is rate limited', function () {
         ]
     )->assertTooManyRequests();
 });
+
+
+test('retention trigger fails closed when the configured secret is unset or empty', function (?string $configured) {
+    $this->withoutMiddleware(
+        ThrottleRequests::class
+    );
+
+    config([
+        'services.retention.trigger_secret' => $configured,
+    ]);
+
+    Artisan::shouldReceive('call')
+        ->never();
+
+    foreach (['', 'anything'] as $provided) {
+        $this->postJson(
+            '/internal/retention/purge',
+            [
+                'dry_run' => true,
+            ],
+            [
+                'X-Retina-Retention-Secret' => $provided,
+            ]
+        )->assertNotFound();
+    }
+})->with([
+    'unset' => [null],
+    'empty' => [''],
+]);
+
+test('retention trigger rejects an empty secret header', function () {
+    $this->withoutMiddleware(
+        ThrottleRequests::class
+    );
+
+    Artisan::shouldReceive('call')
+        ->never();
+
+    $this->postJson(
+        '/internal/retention/purge',
+        [
+            'dry_run' => true,
+        ],
+        [
+            'X-Retina-Retention-Secret' => '',
+        ]
+    )->assertNotFound();
+});

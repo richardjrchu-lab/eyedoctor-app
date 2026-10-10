@@ -106,7 +106,7 @@
                                 "
                             >
                                 Your request for professional access to
-                                the RETINA Diabetic Retinopathy Detection
+                                the RETINA Diabetic Retinopathy Screening Support
                                 System has been approved.
                             </p>
 

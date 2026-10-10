@@ -26,6 +26,17 @@ Route::view(
     'public.about'
 )->name('public.about');
 
+/*
+ * Read-only copy of the Privacy Notice for applicants who do not have an
+ * account yet. It has no acknowledgement form; account holders still
+ * acknowledge the notice through the authenticated legal.privacy route.
+ */
+Route::view(
+    '/privacy-notice',
+    'legal.privacy',
+    ['publicView' => true]
+)->name('public.privacy');
+
 
 /*
 |--------------------------------------------------------------------------

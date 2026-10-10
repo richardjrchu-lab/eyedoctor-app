@@ -204,14 +204,34 @@ class PredictionController extends Controller
 
         $data = $response->json();
 
-        // Honour the model's own fundus check. FastAPI returns this flag on a
-        // 200 response, so without this the app would grade a non-fundus image
-        // and store it as a real clinical prediction.
-        //
-        // Deliberately fails closed: a missing or null flag is treated as a
-        // rejection, not an approval. If the model service ever stops sending
-        // it, uploads break loudly rather than silently grading junk.
-        if (($data['is_valid_fundus_image'] ?? null) !== true) {
+        // A 200 response must carry an explicit boolean fundus decision.
+        // Invalid JSON or a missing/null flag is a model-service protocol
+        // failure, not evidence that the image is non-fundus, so it is
+        // recorded as an error (never as a rejection) and fails closed:
+        // no Prediction is stored and no DR result is reported.
+        if (
+            ! is_array($data)
+            || ! is_bool($data['is_valid_fundus_image'] ?? null)
+        ) {
+            Log::error('Model returned a malformed response', [
+                'image_id' => $image->id,
+                'keys' => is_array($data) ? array_keys($data) : [],
+            ]);
+
+            $image->update([
+                'validation_status' => 'error',
+            ]);
+
+            return response()->json([
+                'detail' => 'The model service returned an unusable response. '
+                    .'No prediction was recorded.',
+            ], 502);
+        }
+
+        // Honour the model's own explicit fundus decision. Without this the
+        // app would grade a non-fundus image and store it as a real clinical
+        // prediction.
+        if ($data['is_valid_fundus_image'] === false) {
             $image->update([
                 'validation_status' => 'rejected_not_fundus',
             ]);
@@ -236,7 +256,8 @@ class PredictionController extends Controller
         //    which is the wrong direction for a screening tool.
         $label = $data['predicted_label'] ?? null;
 
-        $isComplete = isset(self::STAGE_INDEX[$label])
+        $isComplete = is_string($label)
+            && isset(self::STAGE_INDEX[$label])
             && isset($data['confidence'])
             && isset($data['referable'])
             && isset($data['referable_probability'])

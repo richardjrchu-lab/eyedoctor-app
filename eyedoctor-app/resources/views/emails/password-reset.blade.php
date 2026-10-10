@@ -73,7 +73,7 @@
                                     font-size: 13px;
                                 "
                             >
-                                Diabetic Retinopathy Detection System
+                                Diabetic Retinopathy Screening Support System
                             </div>
 
                         </td>
@@ -260,7 +260,7 @@
                                     line-height: 1.6;
                                 "
                             >
-                                RETINA | Diabetic Retinopathy Detection
+                                RETINA | Diabetic Retinopathy Screening Support
                                 System
                             </div>
 

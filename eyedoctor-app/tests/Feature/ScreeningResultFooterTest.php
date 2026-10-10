@@ -147,6 +147,8 @@ function createPage() {
         probabilityRows: el('prob-bars').childCount,
         correctionNote: el('correction-note').value,
         correctionStatus: el('correction-status').innerText,
+        reviewText: el('review-flag-text').innerText,
+        atypicalText: el('atypical-flag-text').innerText,
         hidden: Object.fromEntries(
             ['referral-box', 'review-flag', 'atypical-flag', 'scope-warning',
              'probability-panel', 'doctor-panel', 'correction-status']
@@ -316,6 +318,14 @@ test('initial screening footer shows classification as not performed', function 
         ->and(retinaFooterText($html, 'conf-val'))->toBe('N/A');
 });
 
+test('initial screening labels do not presume a fundus image or an ICDR prediction', function () {
+    $html = retinaFooterScreeningHtml();
+
+    expect(retinaFooterText($html, 'screen-label'))->toBe('Uploaded Image')
+        ->and(retinaFooterText($html, 'stage-label'))->toBe('Screening Result:')
+        ->and($html)->not->toContain('Uploaded Fundus Image');
+});
+
 test('successful prediction shows the B4 model, actual confidence, and all result panels', function () {
     retinaFooterExpectPopulatedSuccess(retinaFooterScenarios()['success']);
 });
@@ -323,7 +333,8 @@ test('successful prediction shows the B4 model, actual confidence, and all resul
 test('rejected first upload shows classification as not performed', function () {
     $state = retinaFooterScenarios()['rejectedFirst'];
 
-    expect($state['badge'])->toBe('Cannot Determine Stage')
+    expect($state['label'])->toBe('Screening Result:')
+        ->and($state['badge'])->toBe('Cannot Determine Stage')
         ->and($state['desc'])->toBe('This does not appear to be a color fundus photograph. No prediction was recorded.');
 
     retinaFooterExpectNoModelOutput($state);
@@ -335,12 +346,14 @@ test('rejected upload after a successful one leaves no stale prediction output',
     // While the second request is pending, the first result is already gone.
     retinaFooterExpectNoModelOutput($states['pendingAfterSuccess']);
 
-    expect($states['pendingAfterSuccess']['badge'])->toBe('Awaiting Result...');
+    expect($states['pendingAfterSuccess']['label'])->toBe('Screening Result:')
+        ->and($states['pendingAfterSuccess']['badge'])->toBe('Awaiting Result...');
 
-    // After the rejection only the failed input's own information remains.
+    // After the rejection only the failed input's own information remains,
+    // and nothing labels it as an ICDR prediction.
     $state = $states['rejectedAfterSuccess'];
 
-    expect($state['label'])->toBe('Predicted ICDR Stage:')
+    expect($state['label'])->toBe('Screening Result:')
         ->and($state['badge'])->toBe('Cannot Determine Stage')
         ->and($state['desc'])->toBe('This does not appear to be a color fundus photograph. No prediction was recorded.');
 
@@ -400,4 +413,30 @@ test('screening script clears prior results before each attempt and on error', f
 
     // No caller may hand setUIDiagnosis a fabricated confidence value.
     expect($html)->not->toMatch('/setUIDiagnosis\([^;]*,\s*(0|100)\s*\)/s');
+});
+
+test('review and atypical flags describe model outputs without clinical causal claims', function () {
+    $state = retinaFooterScenarios()['success'];
+
+    expect($state['reviewText'])
+        ->toBe(
+            'The referral threshold was not met, but the model assigns 30.0% combined probability '
+            .'across the DR stages. The categorical stage and the model\'s other outputs indicate '
+            .'that additional clinician review is appropriate before recording the screening result.'
+        )
+        ->and($state['atypicalText'])
+        ->toBe(
+            'This image is atypical relative to the fundus-image patterns represented by RETINA '
+            .'(signature score 0.50). Interpret the automated result cautiously and review the '
+            .'image clinically.'
+        );
+
+    foreach (['reviewText', 'atypicalText'] as $text) {
+        expect(strtolower($state[$text]))
+            ->not->toContain('microaneurysm')
+            ->not->toContain('more often severe')
+            ->not->toContain('proliferative')
+            ->not->toContain('haemorrhage')
+            ->not->toContain('weigh the grade');
+    }
 });

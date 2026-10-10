@@ -64,7 +64,7 @@ class PublicSeoTest extends TestCase
         $this->assertNotFalse($sitemap);
 
         $this->assertStringContainsString(
-            'https://eyedoctor-app.onrender.com/about',
+            'https://retina-screening.com/about',
             $sitemap
         );
 
@@ -108,7 +108,7 @@ class PublicSeoTest extends TestCase
             'Disallow: /mobile-app',
             'Disallow: /profile',
             'Disallow: /internal/',
-            'Sitemap: https://eyedoctor-app.onrender.com/sitemap.xml',
+            'Sitemap: https://retina-screening.com/sitemap.xml',
         ];
 
         foreach ($expectedRules as $rule) {

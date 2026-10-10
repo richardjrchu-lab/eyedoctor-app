@@ -108,7 +108,7 @@ test('reset password email uses RETINA branding and the standard reset link', fu
 
         expect($html)
             ->toContain('RETINA')
-            ->toContain('Diabetic Retinopathy Detection System')
+            ->toContain('Diabetic Retinopathy Screening Support System')
             ->toContain(e($expectedUrl))
             ->not->toContain('Laravel');
 

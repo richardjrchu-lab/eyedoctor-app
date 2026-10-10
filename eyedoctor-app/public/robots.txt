@@ -12,4 +12,4 @@ Disallow: /mobile-app
 Disallow: /profile
 Disallow: /internal/
 
-Sitemap: https://eyedoctor-app.onrender.com/sitemap.xml
+Sitemap: https://retina-screening.com/sitemap.xml

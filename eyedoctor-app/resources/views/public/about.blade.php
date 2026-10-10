@@ -112,7 +112,7 @@
                         class="text-[11px]
                                text-[#94a3b8]"
                     >
-                        Diabetic Retinopathy Detection System
+                        Diabetic Retinopathy Screening Support System
                     </div>
 
                 </div>
@@ -569,7 +569,7 @@
         >
 
             <div>
-                RETINA — Diabetic Retinopathy Detection System
+                RETINA — Diabetic Retinopathy Screening Support System
             </div>
 
 

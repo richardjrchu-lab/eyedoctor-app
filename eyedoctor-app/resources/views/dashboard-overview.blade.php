@@ -1191,7 +1191,7 @@
                        text-[#64748b]"
             >
                 RETINA &mdash;
-                Diabetic Retinopathy Detection System
+                Diabetic Retinopathy Screening Support System
             </p>
 
         </footer>

@@ -44,7 +44,7 @@
                            text-[#94a3b8]
                            sm:block"
                 >
-                    Diabetic Retinopathy Detection System
+                    Diabetic Retinopathy Screening Support System
                 </div>
 
             </div>

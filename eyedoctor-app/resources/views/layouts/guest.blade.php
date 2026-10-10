@@ -11,7 +11,7 @@
     content="noindex, nofollow"
 >
 
-    <title>RETINA — Diabetic Retinopathy Detection System</title>
+    <title>RETINA — Diabetic Retinopathy Screening Support System</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
 
@@ -71,7 +71,7 @@
                                text-[#f1f5f9]
                                sm:text-2xl"
                     >
-                        Diabetic Retinopathy Detection System
+                        Diabetic Retinopathy Screening Support System
                     </h1>
 
 

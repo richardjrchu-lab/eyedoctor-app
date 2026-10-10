@@ -488,7 +488,7 @@
                     </div>
 
                     <div class="retina-subtitle">
-                        Diabetic Retinopathy Detection System
+                        Diabetic Retinopathy Screening Support System
                     </div>
 
                 </div>

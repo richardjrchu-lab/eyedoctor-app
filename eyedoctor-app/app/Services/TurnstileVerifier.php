@@ -147,19 +147,36 @@ class TurnstileVerifier
             return false;
         }
 
-        $expectedHostname = trim(
-            (string) config(
-                'turnstile.expected_hostname'
-            )
+        /*
+         * TURNSTILE_EXPECTED_HOSTNAME may list several exact hostnames
+         * separated by commas, for example the apex domain, its www
+         * variant, and the Render hostname while all three serve RETINA.
+         * Each entry must match exactly; there is no wildcard matching.
+         */
+        $expectedHostnames = array_values(array_filter(
+            array_map(
+                'trim',
+                explode(
+                    ',',
+                    (string) config(
+                        'turnstile.expected_hostname'
+                    )
+                )
+            ),
+            fn (string $hostname): bool => $hostname !== ''
+        ));
+
+        $reportedHostname = (string) (
+            $result['hostname']
+            ?? ''
         );
 
         if (
-            $expectedHostname !== ''
-            && ! hash_equals(
-                $expectedHostname,
-                (string) (
-                    $result['hostname']
-                    ?? ''
+            $expectedHostnames !== []
+            && ! collect($expectedHostnames)->contains(
+                fn (string $hostname): bool => hash_equals(
+                    $hostname,
+                    $reportedHostname
                 )
             )
         ) {
