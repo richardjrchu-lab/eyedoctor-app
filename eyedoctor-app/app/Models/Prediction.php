@@ -25,6 +25,10 @@ class Prediction extends Model
         'dr_scope_passed',
         'scope_warning',
 
+        'master11_score',
+        'master11_state',
+        'modality_warning',
+
         'gradcam_path',
         'model_version',
     ];
@@ -41,6 +45,8 @@ class Prediction extends Model
         'master12_threshold' => 'float',
         'dr_scope_passed' => 'boolean',
         'scope_warning' => 'boolean',
+        'master11_score' => 'float',
+        'modality_warning' => 'boolean',
 
     ];
 

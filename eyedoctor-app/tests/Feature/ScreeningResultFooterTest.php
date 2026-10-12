@@ -117,6 +117,7 @@ function makeElement(hidden) {
 const initiallyHidden = [
     'referral-box', 'review-flag', 'atypical-flag', 'scope-warning',
     'probability-panel', 'doctor-panel', 'correction-status', 'reset-btn', 'preview-box',
+    'modality-warning',
 ];
 
 function createPage() {
@@ -149,6 +150,15 @@ function createPage() {
         correctionStatus: el('correction-status').innerText,
         reviewText: el('review-flag-text').innerText,
         atypicalText: el('atypical-flag-text').innerText,
+        modality: {
+            hidden: el('modality-warning').hidden,
+            text: el('modality-warning-text').innerText,
+            score: el('modality-score').innerText,
+            threshold: el('modality-threshold').innerText,
+        },
+        scopeHidden: el('scope-warning').hidden,
+        reviewHidden: el('review-flag').hidden,
+        stageBadge: el('stage-badge').innerText,
         hidden: Object.fromEntries(
             ['referral-box', 'review-flag', 'atypical-flag', 'scope-warning',
              'probability-panel', 'doctor-panel', 'correction-status']
@@ -230,6 +240,56 @@ const out = {};
     const page = createPage();
     out.rejectedFirst = (await page.upload(rejected)).settled;
     out.successAfterRejection = (await page.upload(success)).settled;
+}
+
+// Sequence C: binary Master 11 advisory check and independent review reasons.
+// Defaults: referable Moderate NPDR, Master 12 pass.
+{
+    const withModality = (score, reasons, extra = {}) => {
+        const warning = score < 0.00010095704353952897;
+        return {
+            status: 200,
+            body: {
+                ...success.body,
+                referable: true,
+                referable_probability: 0.81,
+                atypical_fundus_image: false,
+                scope_warning: false,
+                master11_score: score,
+                master11_state: warning ? 'MODALITY_WARNING' : 'SUPPORTED_CFP',
+                master11_accept_threshold: 0.00010095704353952897,
+                master11_warning: warning,
+                modality_warning: warning,
+                review_reasons: reasons,
+                flagged_for_review: reasons.length > 0,
+                ...extra,
+            },
+        };
+    };
+
+    const anyDr = {
+        predicted_label: 'No DR', confidence: 0.6, referable: false,
+        referable_probability: 0.12, any_dr_probability: 0.4,
+    };
+    const scope = { scope_warning: true, master12_score: 0.1, master12_threshold: 0.475 };
+
+    const page = createPage();
+    out.modalitySupported = (await page.upload(withModality(0.9999, []))).settled;
+    out.modalityWarning = (await page.upload(withModality(0.00001234, ['modality_warning'], {
+        modality_warning_message: 'Backend modality warning text.',
+    }))).settled;
+    out.modalityAndScope = (await page.upload(withModality(0.0, ['modality_warning', 'scope_warning'], scope))).settled;
+    out.modalityAndAnyDr = (await page.upload(withModality(0.0, ['modality_warning', 'any_dr_probability'], anyDr))).settled;
+    out.allThreeReasons = (await page.upload(withModality(0.0, ['modality_warning', 'scope_warning', 'any_dr_probability'], { ...anyDr, ...scope }))).settled;
+    out.supportedAfterWarning = (await page.upload(withModality(0.9999, []))).settled;
+    await page.upload(withModality(0.0, ['modality_warning']));
+    out.rejectedAfterModalityWarning = (await page.upload(rejected)).settled;
+
+    // A response with flags but no explicit reason list (older Laravel).
+    const legacy = withModality(0.0, [], scope);
+    delete legacy.body.review_reasons;
+    legacy.body.flagged_for_review = true;
+    out.legacyReasons = (await createPage().upload(legacy)).settled;
 }
 
 console.log(JSON.stringify(out));
@@ -416,13 +476,14 @@ test('screening script clears prior results before each attempt and on error', f
 });
 
 test('review and atypical flags describe model outputs without clinical causal claims', function () {
+    // This older-shape response (no review_reasons) is flagged by the DR-scope
+    // warning, so the review panel names that reason rather than the any-DR one.
     $state = retinaFooterScenarios()['success'];
 
     expect($state['reviewText'])
         ->toBe(
-            'The referral threshold was not met, but the model assigns 30.0% combined probability '
-            .'across the DR stages. The categorical stage and the model\'s other outputs indicate '
-            .'that additional clinician review is appropriate before recording the screening result.'
+            '• DR-scope check: the image is less similar to retinal images represented in '
+            .'RETINA\'s DR-classification scope.'
         )
         ->and($state['atypicalText'])
         ->toBe(
@@ -439,4 +500,120 @@ test('review and atypical flags describe model outputs without clinical causal c
             ->not->toContain('haemorrhage')
             ->not->toContain('weigh the grade');
     }
+});
+
+const RETINA_FOOTER_MODALITY_REASON = '• Imaging-modality check: the image may differ from RETINA\'s supported '
+    .'color fundus photography domain.';
+
+const RETINA_FOOTER_SCOPE_REASON = '• DR-scope check: the image is less similar to retinal images '
+    .'represented in RETINA\'s DR-classification scope.';
+
+const RETINA_FOOTER_ANY_DR_REASON = '• The referral threshold was not met, but the model assigns 40.0% '
+    .'combined probability across the DR stages. The categorical stage and the model\'s other '
+    .'outputs indicate that additional clinician review is appropriate before recording the '
+    .'screening result.';
+
+test('a supported modality adds no modality warning and no review flag', function () {
+    $state = retinaFooterScenarios()['modalitySupported'];
+
+    expect($state['modality']['hidden'])->toBeTrue()
+        ->and($state['reviewHidden'])->toBeTrue()
+        ->and($state['stageBadge'])->toBe('Stage 2: Moderate Non-Proliferative DR')
+        ->and($state['hidden']['referral-box'])->toBeFalse()
+        ->and($state['probabilityRows'])->toBe(5);
+});
+
+test('a modality warning is visible, non-blocking and flags a referable result for review', function () {
+    $state = retinaFooterScenarios()['modalityWarning'];
+
+    expect($state['modality']['hidden'])->toBeFalse()
+        ->and($state['modality']['text'])->toBe('Backend modality warning text.')
+        ->and($state['modality']['score'])->toBe('1.234e-5')
+        ->and($state['modality']['threshold'])->toBe('≥ 1.010e-4')
+        // The review panel appears for a referable result too.
+        ->and($state['reviewHidden'])->toBeFalse()
+        ->and($state['reviewText'])->toBe(RETINA_FOOTER_MODALITY_REASON)
+        ->and($state['referralHeadline'])->not->toBe('No Referral Indicated')
+        // Classification output stays fully visible.
+        ->and($state['stageBadge'])->toBe('Stage 2: Moderate Non-Proliferative DR')
+        ->and($state['confidence'])->toBe('64%')
+        ->and($state['probabilityRows'])->toBe(5)
+        ->and($state['hidden']['referral-box'])->toBeFalse()
+        ->and($state['hidden']['probability-panel'])->toBeFalse()
+        ->and($state['hidden']['doctor-panel'])->toBeFalse()
+        ->and($state['predictionId'])->toBe(42);
+});
+
+test('the modality warning falls back to the cautious frozen wording', function () {
+    $state = retinaFooterScenarios()['modalityAndScope'];
+
+    expect($state['modality']['text'])
+        ->toBe(
+            'The image received a low supported-modality score and may fall outside the conventional '
+            .'or supported portable color fundus photography domain represented by RETINA. DR '
+            .'classification was completed for decision support, but clinician review is required.'
+        );
+
+    foreach (['diagnos', 'definitely', 'uwf', 'ultra-widefield', 'invalid patient', 'clinically confirmed', 'unusable'] as $phrase) {
+        expect(strtolower($state['modality']['text']))->not->toContain($phrase);
+    }
+});
+
+test('modality and Master 12 warnings are shown together without overwriting each other', function () {
+    $state = retinaFooterScenarios()['modalityAndScope'];
+
+    expect($state['modality']['hidden'])->toBeFalse()
+        ->and($state['scopeHidden'])->toBeFalse()
+        ->and($state['reviewText'])->toBe(RETINA_FOOTER_MODALITY_REASON."\n".RETINA_FOOTER_SCOPE_REASON)
+        ->and($state['stageBadge'])->toBe('Stage 2: Moderate Non-Proliferative DR')
+        ->and($state['probabilityRows'])->toBe(5);
+});
+
+test('a modality warning with the any-DR condition keeps the probability explanation', function () {
+    $state = retinaFooterScenarios()['modalityAndAnyDr'];
+
+    expect($state['reviewHidden'])->toBeFalse()
+        ->and($state['reviewText'])->toBe(RETINA_FOOTER_MODALITY_REASON."\n".RETINA_FOOTER_ANY_DR_REASON)
+        ->and($state['referralHeadline'])->toBe('No Referral Indicated')
+        ->and($state['modality']['hidden'])->toBeFalse();
+});
+
+test('all three review reasons are shown together', function () {
+    $state = retinaFooterScenarios()['allThreeReasons'];
+
+    expect($state['reviewText'])
+        ->toBe(implode("\n", [
+            RETINA_FOOTER_MODALITY_REASON,
+            RETINA_FOOTER_SCOPE_REASON,
+            RETINA_FOOTER_ANY_DR_REASON,
+        ]))
+        ->and($state['modality']['hidden'])->toBeFalse()
+        ->and($state['scopeHidden'])->toBeFalse();
+});
+
+test('reasons are derived from warning flags when no reason list is sent', function () {
+    $state = retinaFooterScenarios()['legacyReasons'];
+
+    expect($state['reviewText'])->toBe(RETINA_FOOTER_MODALITY_REASON."\n".RETINA_FOOTER_SCOPE_REASON);
+});
+
+test('a modality warning never lingers on a later supported or rejected upload', function () {
+    $states = retinaFooterScenarios();
+
+    expect($states['supportedAfterWarning']['modality']['hidden'])->toBeTrue()
+        ->and($states['supportedAfterWarning']['reviewHidden'])->toBeTrue()
+        ->and($states['rejectedAfterModalityWarning']['modality']['hidden'])->toBeTrue();
+
+    retinaFooterExpectNoModelOutput($states['rejectedAfterModalityWarning']);
+});
+
+test('the modality warning markup uses one cautious advisory state', function () {
+    $html = retinaFooterScreeningHtml();
+
+    expect($html)
+        ->toMatch('/id="modality-warning"\s+class="hidden/')
+        ->toContain('Imaging Modality Warning')
+        ->not->toContain('REJECT_UWF_UNSUPPORTED')
+        ->not->toContain('BORDERLINE')
+        ->not->toContain('title="Modality');
 });

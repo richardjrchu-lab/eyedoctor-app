@@ -26,6 +26,33 @@ class PredictionController extends Controller
         'PDR' => 4,
     ];
 
+    /**
+     * Master 11 (advisory modality check) fields. They arrive together or
+     * not at all; a partial set is a malformed response.
+     */
+    private const MASTER11_FIELDS = [
+        'master11_score',
+        'master11_state',
+        'master11_accept_threshold',
+        'master11_warning',
+        'modality_warning',
+    ];
+
+    private const MASTER11_ACCEPT_THRESHOLD = 0.00010095704353952897;
+
+    /**
+     * Independent reasons a result is flagged for clinician review.
+     * 'model_flagged' is only derived here, for an older backend that sets
+     * the flag without saying why.
+     */
+    private const REVIEW_REASONS = [
+        'modality_warning',
+        'scope_warning',
+        'any_dr_probability',
+    ];
+
+    private const ANY_DR_REVIEW_THRESHOLD = 0.10;
+
     public function predictEvaluation(
         Request $request,
         ImageSanitizer $imageSanitizer
@@ -278,6 +305,39 @@ class PredictionController extends Controller
             ], 502);
         }
 
+        // Master 11 never blocks a Web prediction, but a malformed modality
+        // check must not be read as a supported modality.
+        $master11 = $this->master11Contract($data);
+        $modalityWarning = $master11 === 'valid' && $data['master11_warning'] === true;
+        $reviewReasons = $this->reviewReasons($data, $modalityWarning);
+
+        if ($master11 === 'malformed' || $reviewReasons === null) {
+            Log::error('Model returned a malformed Master 11 result', [
+                'image_id' => $image->id,
+                'keys' => array_keys($data),
+            ]);
+
+            $image->update([
+                'validation_status' => 'error',
+            ]);
+
+            return response()->json([
+                'detail' => 'Model returned an incomplete result. No prediction was saved.',
+            ], 502);
+        }
+
+        if ($master11 === 'absent') {
+            Log::warning('Model response did not include the Master 11 modality check', [
+                'image_id' => $image->id,
+            ]);
+        }
+
+        // Every review reason forces clinician review; none clears another
+        // reason the backend gave for review.
+        $data['review_reasons'] = $reviewReasons;
+        $data['flagged_for_review'] = (bool) ($data['flagged_for_review'] ?? false)
+            || $reviewReasons !== [];
+
         $prediction = Prediction::create([
             'image_id' => $image->id,
             'predicted_class' => self::STAGE_INDEX[$label],
@@ -285,7 +345,7 @@ class PredictionController extends Controller
             'probabilities' => $data['class_probabilities'],
             'referral_flag' => $data['referable'],
             'referable_probability' => $data['referable_probability'],
-            'flagged_for_review' => $data['flagged_for_review'] ?? false,
+            'flagged_for_review' => $data['flagged_for_review'],
             'atypical_fundus_image' => $data['atypical_fundus_image'] ?? false,
             'fundus_signature_score' => $data['fundus_signature_score'] ?? null,
 
@@ -293,6 +353,12 @@ class PredictionController extends Controller
             'master12_threshold' => $data['master12_threshold'] ?? null,
             'dr_scope_passed' => $data['dr_scope_passed'] ?? null,
             'scope_warning' => $data['scope_warning'] ?? null,
+
+            // Null when the backend predates Master 11: "not recorded",
+            // never a supported modality.
+            'master11_score' => $master11 === 'valid' ? $data['master11_score'] : null,
+            'master11_state' => $master11 === 'valid' ? $data['master11_state'] : null,
+            'modality_warning' => $master11 === 'valid' ? $modalityWarning : null,
 
             'gradcam_path' => null,
             'model_version' => 'efficientnet-b4-512-coral',
@@ -308,6 +374,109 @@ class PredictionController extends Controller
         $data['prediction_id'] = $prediction->id;
 
         return response()->json($data);
+    }
+
+    /**
+     * Classify the Master 11 part of a successful model response.
+     *
+     * 'valid'     every field present, well-typed and self-consistent
+     * 'absent'    no field present and the check is not yet required
+     *             (backend deployed before or after Laravel)
+     * 'malformed' anything else; never treated as a supported modality
+     */
+    private function master11Contract(array $data): string
+    {
+        $present = array_filter(
+            self::MASTER11_FIELDS,
+            fn (string $field) => array_key_exists($field, $data)
+        );
+
+        if ($present === []) {
+            return config('services.fastapi.require_master11')
+                ? 'malformed'
+                : 'absent';
+        }
+
+        if (count($present) !== count(self::MASTER11_FIELDS)) {
+            return 'malformed';
+        }
+
+        $isNumber = fn ($value) => (is_int($value) || is_float($value))
+            && is_finite((float) $value);
+
+        $score = $data['master11_score'];
+        $accept = $data['master11_accept_threshold'];
+        $state = $data['master11_state'];
+        $warning = $data['master11_warning'];
+
+        if (
+            ! $isNumber($score)
+            || ! $isNumber($accept)
+            || (float) $accept !== self::MASTER11_ACCEPT_THRESHOLD
+            || ! is_bool($warning)
+            || $data['modality_warning'] !== $warning
+        ) {
+            return 'malformed';
+        }
+
+        // Binary Web rule; the state must be the one it gives for this score.
+        $expectedState = $score >= $accept
+            ? 'SUPPORTED_CFP'
+            : 'MODALITY_WARNING';
+
+        if ($state !== $expectedState || $warning !== ($state === 'MODALITY_WARNING')) {
+            return 'malformed';
+        }
+
+        return 'valid';
+    }
+
+    /**
+     * The independent clinician-review reasons for a successful response,
+     * or null when the backend's own list is malformed or contradicts the
+     * warning fields it sits beside.
+     *
+     * When the backend sends no list (older backend), the reasons are
+     * derived from the fields it does send.
+     */
+    private function reviewReasons(array $data, bool $modalityWarning): ?array
+    {
+        $scopeWarning = ($data['scope_warning'] ?? null) === true;
+
+        if (array_key_exists('review_reasons', $data)) {
+            $reasons = $data['review_reasons'];
+
+            if (
+                ! is_array($reasons)
+                || ! array_is_list($reasons)
+                || array_filter($reasons, fn ($reason) => ! is_string($reason)) !== []
+                || array_diff($reasons, self::REVIEW_REASONS) !== []
+                || count(array_unique($reasons, SORT_REGULAR)) !== count($reasons)
+                || in_array('modality_warning', $reasons, true) !== $modalityWarning
+                || in_array('scope_warning', $reasons, true) !== $scopeWarning
+            ) {
+                return null;
+            }
+
+            return $reasons;
+        }
+
+        $anyDr = $data['any_dr_probability'] ?? null;
+
+        $reasons = array_keys(array_filter([
+            'modality_warning' => $modalityWarning,
+            'scope_warning' => $scopeWarning,
+            'any_dr_probability' => ($data['predicted_label'] ?? null) === 'No DR'
+                && ($data['referable'] ?? null) === false
+                && (is_int($anyDr) || is_float($anyDr))
+                && $anyDr >= self::ANY_DR_REVIEW_THRESHOLD,
+        ]));
+
+        if ($reasons === [] && ($data['flagged_for_review'] ?? false) === true) {
+            $reasons = ['model_flagged'];
+        }
+
+        return $reasons;
     }
 
     public function correct(
