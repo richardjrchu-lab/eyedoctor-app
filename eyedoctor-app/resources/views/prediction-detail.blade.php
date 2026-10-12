@@ -90,6 +90,52 @@
     {{-- Result --}}
     <section class="space-y-4">
 
+        {{-- Imaging modality check — Master 11 advisory warning.
+             Predictions made before Master 11 have no saved check. --}}
+        @if ($prediction->master11_state === null)
+        <p class="text-xs font-mono text-slate-400">
+            Modality check: Not recorded
+        </p>
+        @elseif ($prediction->modality_warning)
+        <div class="border-2 border-amber-600 bg-amber-950/40 rounded p-4">
+            <div class="flex items-start gap-3">
+
+                <span class="text-amber-400 text-lg leading-none mt-0.5">
+                    &#9888;
+                </span>
+
+                <div class="flex-1">
+                    <p class="font-bold text-amber-300 tracking-wide">
+                        IMAGING MODALITY WARNING
+                    </p>
+
+                    <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                        The image received a low supported-modality score and may fall outside
+                        the conventional or supported portable color fundus photography domain
+                        represented by RETINA. DR classification was completed for decision
+                        support, but clinician review is required.
+                    </p>
+
+                    @if ($prediction->master11_score !== null)
+                    <div class="mt-3 text-xs font-mono">
+                        <div class="bg-black/20 border border-amber-900/60 rounded p-2">
+                            <p class="text-amber-300">Modality score</p>
+                            <p class="text-slate-100 mt-1">
+                                {{ sprintf('%.3e', $prediction->master11_score) }}
+                            </p>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+
+            </div>
+        </div>
+        @else
+        <p class="text-xs font-mono text-slate-400">
+            Modality check: No modality warning
+        </p>
+        @endif
+
         {{-- DR Scope Check — Master 12 soft warning --}}
         @if ($prediction->scope_warning)
         <div class="border-2 border-orange-700 bg-orange-950/40 rounded p-4">
