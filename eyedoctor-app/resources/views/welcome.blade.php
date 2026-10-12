@@ -742,6 +742,99 @@
 
 
                 {{-- ================================================= --}}
+                {{-- MODALITY CHECK - MASTER 11 WARNING (ADVISORY)     --}}
+                {{-- Shown only for MODALITY_WARNING; never a          --}}
+                {{-- confirmation for a supported modality.            --}}
+                {{-- ================================================= --}}
+
+                <div
+                    id="modality-warning"
+                    class="hidden mb-4 p-4
+                           bg-amber-950/40
+                           rounded-lg
+                           border-2 border-amber-600/70"
+                >
+
+                    <div class="flex items-start gap-3">
+
+                        <span
+                            class="text-amber-400
+                                   text-lg leading-none
+                                   mt-0.5"
+                        >
+                            &#9888;
+                        </span>
+
+                        <div class="flex-1">
+
+                            <span
+                                class="text-[11px]
+                                       font-mono
+                                       text-amber-300
+                                       uppercase font-bold
+                                       block mb-2"
+                            >
+                                Imaging Modality Warning
+                            </span>
+
+                            <p
+                                id="modality-warning-text"
+                                class="text-[11px]
+                                       text-amber-100/90
+                                       leading-relaxed"
+                            >
+                            </p>
+
+                            <div
+                                class="mt-3 grid grid-cols-1
+                                       sm:grid-cols-2 gap-2
+                                       text-[10px] font-mono"
+                            >
+
+                                <div
+                                    class="bg-black/20
+                                           border border-amber-900/60
+                                           rounded p-2"
+                                >
+                                    <span class="text-amber-300 block">
+                                        Modality score
+                                    </span>
+
+                                    <span
+                                        id="modality-score"
+                                        class="text-slate-200"
+                                    >
+                                        &mdash;
+                                    </span>
+                                </div>
+
+                                <div
+                                    class="bg-black/20
+                                           border border-amber-900/60
+                                           rounded p-2"
+                                >
+                                    <span class="text-amber-300 block">
+                                        Supported-modality threshold
+                                    </span>
+
+                                    <span
+                                        id="modality-threshold"
+                                        class="text-slate-200"
+                                    >
+                                        &mdash;
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ================================================= --}}
                 {{-- DR SCOPE CHECK - MASTER 12 WARNING                --}}
                 {{-- ================================================= --}}
 
@@ -1946,9 +2039,38 @@
                     document.getElementById('review-flag');
 
 
+                // Each applicable reason is listed on its own; one reason
+                // never replaces or explains away another.
+                let reviewReasons =
+                    Array.isArray(data.review_reasons)
+                        ? data.review_reasons
+                        : null;
+
+
+                if (reviewReasons === null) {
+
+                    // Older response without an explicit reason list.
+                    reviewReasons = [];
+
+                    if (data.modality_warning === true) {
+                        reviewReasons.push('modality_warning');
+                    }
+
+                    if (data.scope_warning === true) {
+                        reviewReasons.push('scope_warning');
+                    }
+
+                    if (data.flagged_for_review && reviewReasons.length === 0) {
+                        reviewReasons.push(
+                            data.referable ? 'model_flagged' : 'any_dr_probability'
+                        );
+                    }
+                }
+
+
                 if (
-                    !data.referable
-                    && data.flagged_for_review
+                    data.flagged_for_review
+                    || reviewReasons.length > 0
                 ) {
 
                     // Describe only the observable model-output condition;
@@ -1964,14 +2086,40 @@
                             : `the model flagged this result for review`;
 
 
+                    const reasonText = {
+
+                        modality_warning:
+                            `Imaging-modality check: the image may differ from RETINA's `
+                            + `supported color fundus photography domain.`,
+
+                        scope_warning:
+                            `DR-scope check: the image is less similar to retinal images `
+                            + `represented in RETINA's DR-classification scope.`,
+
+                        any_dr_probability:
+                            `The referral threshold was not met, but ${anyDrText}. `
+                            + `The categorical stage and the model's other outputs indicate that `
+                            + `additional clinician review is appropriate before recording the `
+                            + `screening result.`,
+
+                        model_flagged:
+                            `The model service flagged this result for clinician review.`,
+                    };
+
+
+                    const reasonLines =
+                        reviewReasons
+                            .map(reason => reasonText[reason])
+                            .filter(Boolean);
+
+
                     document
                         .getElementById('review-flag-text')
                         .innerText =
 
-                        `The referral threshold was not met, but ${anyDrText}. `
-                        + `The categorical stage and the model's other outputs indicate that `
-                        + `additional clinician review is appropriate before recording the `
-                        + `screening result.`;
+                        (reasonLines.length > 0 ? reasonLines : [reasonText.model_flagged])
+                            .map(line => `• ${line}`)
+                            .join('\n');
 
 
                     reviewFlag
@@ -2021,6 +2169,66 @@
                 } else {
 
                     atypicalFlag
+                        .classList
+                        .add('hidden');
+
+                }
+
+
+
+                // ========================================================
+                // MODALITY CHECK - MASTER 11 (advisory; never blocks)
+                // ========================================================
+
+                const modalityWarning =
+                    document.getElementById('modality-warning');
+
+
+                if (data.modality_warning === true) {
+
+                    const modalityScore =
+                        Number(data.master11_score);
+
+                    const modalityThreshold =
+                        Number(data.master11_accept_threshold);
+
+
+                    document
+                        .getElementById('modality-warning-text')
+                        .innerText =
+
+                        data.modality_warning_message
+                        || `The image received a low supported-modality score and may fall `
+                        + `outside the conventional or supported portable color fundus `
+                        + `photography domain represented by RETINA. DR classification was `
+                        + `completed for decision support, but clinician review is required.`;
+
+
+                    document
+                        .getElementById('modality-score')
+                        .innerText =
+
+                        Number.isFinite(modalityScore)
+                            ? modalityScore.toExponential(3)
+                            : 'Not recorded';
+
+
+                    document
+                        .getElementById('modality-threshold')
+                        .innerText =
+
+                        Number.isFinite(modalityThreshold)
+                            ? `≥ ${modalityThreshold.toExponential(3)}`
+                            : 'Not recorded';
+
+
+                    modalityWarning
+                        .classList
+                        .remove('hidden');
+
+                } else {
+
+                    modalityWarning
                         .classList
                         .add('hidden');
 
@@ -2501,6 +2709,7 @@
                 'referral-box',
                 'review-flag',
                 'atypical-flag',
+                'modality-warning',
                 'scope-warning',
                 'probability-panel',
                 'doctor-panel',
